@@ -27,12 +27,8 @@ def random_resize_crop_synth(augment_targets, size):
     short_side = min(image.size)
     i, j, h, w = RandomCrop.get_params(image, output_size=(short_side, short_side))
 
-    image = resized_crop(
-        image, i, j, h, w, size=(size, size), interpolation=InterpolationMode.BICUBIC
-    )
-    region_score = resized_crop(
-        region_score, i, j, h, w, (size, size), interpolation=InterpolationMode.BICUBIC
-    )
+    image = resized_crop(image, i, j, h, w, size=(size, size), interpolation=InterpolationMode.BICUBIC)
+    region_score = resized_crop(region_score, i, j, h, w, (size, size), interpolation=InterpolationMode.BICUBIC)
     affinity_score = resized_crop(
         affinity_score,
         i,
@@ -61,9 +57,7 @@ def random_resize_crop_synth(augment_targets, size):
     return augment_targets
 
 
-def random_resize_crop(
-    augment_targets, scale, ratio, size, threshold, pre_crop_area=None
-):
+def random_resize_crop(augment_targets, scale, ratio, size, threshold, pre_crop_area=None):
     image, region_score, affinity_score, confidence_mask = augment_targets
 
     image = Image.fromarray(image)
@@ -78,16 +72,10 @@ def random_resize_crop(
         if random.random() < threshold:
             i, j, h, w = RandomResizedCrop.get_params(image, scale=scale, ratio=ratio)
         else:
-            i, j, h, w = RandomResizedCrop.get_params(
-                image, scale=(1.0, 1.0), ratio=(1.0, 1.0)
-            )
+            i, j, h, w = RandomResizedCrop.get_params(image, scale=(1.0, 1.0), ratio=(1.0, 1.0))
 
-    image = resized_crop(
-        image, i, j, h, w, size=(size, size), interpolation=InterpolationMode.BICUBIC
-    )
-    region_score = resized_crop(
-        region_score, i, j, h, w, (size, size), interpolation=InterpolationMode.BICUBIC
-    )
+    image = resized_crop(image, i, j, h, w, size=(size, size), interpolation=InterpolationMode.BICUBIC)
+    region_score = resized_crop(region_score, i, j, h, w, (size, size), interpolation=InterpolationMode.BICUBIC)
     affinity_score = resized_crop(
         affinity_score,
         i,
@@ -166,9 +154,7 @@ def random_rotate(images, max_angle):
         w, h = img.shape[:2]
         rotation_matrix = cv2.getRotationMatrix2D((h / 2, w / 2), angle, 1)
         if i == len(images) - 1:
-            img_rotation = cv2.warpAffine(
-                img, M=rotation_matrix, dsize=(h, w), flags=cv2.INTER_NEAREST
-            )
+            img_rotation = cv2.warpAffine(img, M=rotation_matrix, dsize=(h, w), flags=cv2.INTER_NEAREST)
         else:
             img_rotation = cv2.warpAffine(img, rotation_matrix, (h, w))
         images[i] = img_rotation

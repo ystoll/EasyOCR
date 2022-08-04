@@ -23,14 +23,11 @@ class GaussianBuilder(object):
                     1
                     / 2
                     / np.pi
-                    / (self.sigma ** 2)
+                    / (self.sigma**2)
                     * np.exp(
                         -1
                         / 2
-                        * (
-                            (i - self.init_size / 2) ** 2 / (self.sigma ** 2)
-                            + (j - self.init_size / 2) ** 2 / (self.sigma ** 2)
-                        )
+                        * ((i - self.init_size / 2) ** 2 / (self.sigma**2) + (j - self.init_size / 2) ** 2 / (self.sigma**2))
                     )
                 )
 
@@ -76,9 +73,7 @@ class GaussianBuilder(object):
         warped_gaussian_map = cv2.warpPerspective(self.gaussian_map, M, (width, height))
         return warped_gaussian_map, width, height
 
-    def add_gaussian_map_to_score_map(
-        self, score_map, bbox, enlarge_size, horizontal_text_bool, map_type=None
-    ):
+    def add_gaussian_map_to_score_map(self, score_map, bbox, enlarge_size, horizontal_text_bool, map_type=None):
         """
         Mapping 2D Gaussian to the character box coordinates of the score_map.
 
@@ -103,17 +98,14 @@ class GaussianBuilder(object):
         if np.any(bbox < 0) or np.any(bbox[:, 0] > map_w) or np.any(bbox[:, 1] > map_h):
             return score_map
 
-        bbox_left, bbox_top = np.array([np.min(bbox[:, 0]), np.min(bbox[:, 1])]).astype(
-            np.int32
-        )
+        bbox_left, bbox_top = np.array([np.min(bbox[:, 0]), np.min(bbox[:, 1])]).astype(np.int32)
         bbox -= (bbox_left, bbox_top)
-        warped_gaussian_map, width, height = self.four_point_transform(
-            bbox.astype(np.float32)
-        )
+        warped_gaussian_map, width, height = self.four_point_transform(bbox.astype(np.float32))
 
         try:
             bbox_area_of_image = score_map[
-                bbox_top : bbox_top + height, bbox_left : bbox_left + width,
+                bbox_top : bbox_top + height,
+                bbox_left : bbox_left + width,
             ]
             high_value_score = np.where(
                 warped_gaussian_map > bbox_area_of_image,
@@ -121,16 +113,13 @@ class GaussianBuilder(object):
                 bbox_area_of_image,
             )
             score_map[
-                bbox_top : bbox_top + height, bbox_left : bbox_left + width,
+                bbox_top : bbox_top + height,
+                bbox_left : bbox_left + width,
             ] = high_value_score
 
         except Exception as e:
             print("Error : {}".format(e))
-            print(
-                "On generating {} map, strange box came out. (width: {}, height: {})".format(
-                    map_type, width, height
-                )
-            )
+            print("On generating {} map, strange box came out. (width: {}, height: {})".format(map_type, width, height))
 
         return score_map
 
@@ -149,13 +138,9 @@ class GaussianBuilder(object):
         affinity_box = np.array([tl, tr, br, bl]).astype(np.float32)
         return affinity_box
 
-    def generate_region(
-        self, img_h, img_w, word_level_char_bbox, horizontal_text_bools
-    ):
+    def generate_region(self, img_h, img_w, word_level_char_bbox, horizontal_text_bools):
         region_map = np.zeros([img_h, img_w], dtype=np.float32)
-        for i in range(
-            len(word_level_char_bbox)
-        ):  # shape : [word_num, [char_num_in_one_word, 4, 2]]
+        for i in range(len(word_level_char_bbox)):  # shape : [word_num, [char_num_in_one_word, 4, 2]]
             for j in range(len(word_level_char_bbox[i])):
                 region_map = self.add_gaussian_map_to_score_map(
                     region_map,
@@ -166,17 +151,13 @@ class GaussianBuilder(object):
                 )
         return region_map
 
-    def generate_affinity(
-        self, img_h, img_w, word_level_char_bbox, horizontal_text_bools
-    ):
+    def generate_affinity(self, img_h, img_w, word_level_char_bbox, horizontal_text_bools):
 
         affinity_map = np.zeros([img_h, img_w], dtype=np.float32)
         all_affinity_bbox = []
         for i in range(len(word_level_char_bbox)):
             for j in range(len(word_level_char_bbox[i]) - 1):
-                affinity_bbox = self.calculate_affinity_box_points(
-                    word_level_char_bbox[i][j], word_level_char_bbox[i][j + 1]
-                )
+                affinity_bbox = self.calculate_affinity_box_points(word_level_char_bbox[i][j], word_level_char_bbox[i][j + 1])
 
                 affinity_map = self.add_gaussian_map_to_score_map(
                     affinity_map,

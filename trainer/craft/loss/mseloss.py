@@ -7,10 +7,7 @@ class Loss(nn.Module):
         super(Loss, self).__init__()
 
     def forward(self, gt_region, gt_affinity, pred_region, pred_affinity, conf_map):
-        loss = torch.mean(
-            ((gt_region - pred_region).pow(2) + (gt_affinity - pred_affinity).pow(2))
-            * conf_map
-        )
+        loss = torch.mean(((gt_region - pred_region).pow(2) + (gt_affinity - pred_affinity).pow(2)) * conf_map)
         return loss
 
 
@@ -34,14 +31,7 @@ class Maploss_v2(nn.Module):
 
         if positive_pixel_number != 0:
             if negative_pixel_number < neg_rto * positive_pixel_number:
-                negative_loss = (
-                    torch.sum(
-                        torch.topk(
-                            negative_loss_region.view(-1), n_min_neg, sorted=False
-                        )[0]
-                    )
-                    / n_min_neg
-                )
+                negative_loss = torch.sum(torch.topk(negative_loss_region.view(-1), n_min_neg, sorted=False)[0]) / n_min_neg
             else:
                 negative_loss = torch.sum(
                     torch.topk(
@@ -53,14 +43,7 @@ class Maploss_v2(nn.Module):
             positive_loss = torch.sum(positive_loss_region) / positive_pixel_number
         else:
             # only negative pixel
-            negative_loss = (
-                torch.sum(
-                    torch.topk(negative_loss_region.view(-1), n_min_neg, sorted=False)[
-                        0
-                    ]
-                )
-                / n_min_neg
-            )
+            negative_loss = torch.sum(torch.topk(negative_loss_region.view(-1), n_min_neg, sorted=False)[0]) / n_min_neg
             positive_loss = 0.0
         total_loss = positive_loss + negative_loss
         return total_loss
@@ -77,8 +60,7 @@ class Maploss_v2(nn.Module):
     ):
         loss_fn = torch.nn.MSELoss(reduce=False, size_average=False)
         assert (
-            region_scores_label.size() == region_scores_pre.size()
-            and affinity_socres_label.size() == affinity_scores_pre.size()
+            region_scores_label.size() == region_scores_pre.size() and affinity_socres_label.size() == affinity_scores_pre.size()
         )
         loss1 = loss_fn(region_scores_pre, region_scores_label)
         loss2 = loss_fn(affinity_scores_pre, affinity_socres_label)
@@ -86,12 +68,8 @@ class Maploss_v2(nn.Module):
         loss_region = torch.mul(loss1, mask)
         loss_affinity = torch.mul(loss2, mask)
 
-        char_loss = self.batch_image_loss(
-            loss_region, region_scores_label, neg_rto, n_min_neg
-        )
-        affi_loss = self.batch_image_loss(
-            loss_affinity, affinity_socres_label, neg_rto, n_min_neg
-        )
+        char_loss = self.batch_image_loss(loss_region, region_scores_label, neg_rto, n_min_neg)
+        affi_loss = self.batch_image_loss(loss_affinity, affinity_socres_label, neg_rto, n_min_neg)
         return char_loss + affi_loss
 
 
@@ -124,18 +102,10 @@ class Maploss_v3(nn.Module):
                 else:
                     n_hard_neg = max(n_min_neg, neg_rto * n_pos_pixel)
                     # n_hard_neg = neg_rto*n_pos_pixel
-                    negative_loss += (
-                        torch.sum(
-                            torch.topk(neg_loss_region.view(-1), int(n_hard_neg))[0]
-                        )
-                        / n_hard_neg
-                    )
+                    negative_loss += torch.sum(torch.topk(neg_loss_region.view(-1), int(n_hard_neg))[0]) / n_hard_neg
             else:
                 # only negative pixel
-                negative_loss += (
-                    torch.sum(torch.topk(neg_loss_region.view(-1), n_min_neg)[0])
-                    / n_min_neg
-                )
+                negative_loss += torch.sum(torch.topk(neg_loss_region.view(-1), n_min_neg)[0]) / n_min_neg
 
         total_loss = (positive_loss + negative_loss) / batch_size
 
@@ -154,19 +124,14 @@ class Maploss_v3(nn.Module):
         loss_fn = torch.nn.MSELoss(reduce=False, size_average=False)
 
         assert (
-            region_scores_label.size() == region_scores_pre.size()
-            and affinity_scores_label.size() == affinity_scores_pre.size()
+            region_scores_label.size() == region_scores_pre.size() and affinity_scores_label.size() == affinity_scores_pre.size()
         )
         loss1 = loss_fn(region_scores_pre, region_scores_label)
         loss2 = loss_fn(affinity_scores_pre, affinity_scores_label)
 
         loss_region = torch.mul(loss1, mask)
         loss_affinity = torch.mul(loss2, mask)
-        char_loss = self.single_image_loss(
-            loss_region, region_scores_label, neg_rto, n_min_neg
-        )
-        affi_loss = self.single_image_loss(
-            loss_affinity, affinity_scores_label, neg_rto, n_min_neg
-        )
+        char_loss = self.single_image_loss(loss_region, region_scores_label, neg_rto, n_min_neg)
+        affi_loss = self.single_image_loss(loss_affinity, affinity_scores_label, neg_rto, n_min_neg)
 
         return char_loss + affi_loss

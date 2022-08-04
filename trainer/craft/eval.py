@@ -22,7 +22,6 @@ from utils.inference_boxes import (
 from utils.util import copyStateDict
 
 
-
 def save_result_synth(img_file, img, pre_output, pre_box, gt_box=None, result_dir=""):
 
     img = np.array(img)
@@ -38,9 +37,7 @@ def save_result_synth(img_file, img, pre_output, pre_box, gt_box=None, result_di
         poly = np.array(box).astype(np.int32).reshape((-1))
         poly = poly.reshape(-1, 2)
         try:
-            cv2.polylines(
-                img, [poly.reshape((-1, 1, 2))], True, color=(0, 255, 0), thickness=2
-            )
+            cv2.polylines(img, [poly.reshape((-1, 1, 2))], True, color=(0, 255, 0), thickness=2)
         except:
             pass
 
@@ -80,9 +77,7 @@ def save_result_2015(img_file, img, pre_output, pre_box, gt_box, result_dir):
         poly = np.array(box).astype(np.int32).reshape((-1))
         poly = poly.reshape(-1, 2)
         try:
-            cv2.polylines(
-                img, [poly.reshape((-1, 1, 2))], True, color=(0, 255, 0), thickness=2
-            )
+            cv2.polylines(img, [poly.reshape((-1, 1, 2))], True, color=(0, 255, 0), thickness=2)
         except:
             pass
 
@@ -120,9 +115,7 @@ def save_result_2013(img_file, img, pre_output, pre_box, gt_box=None, result_dir
         poly = np.array(box).astype(np.int32).reshape((-1))
         poly = poly.reshape(-1, 2)
         try:
-            cv2.polylines(
-                img, [poly.reshape((-1, 1, 2))], True, color=(0, 255, 0), thickness=2
-            )
+            cv2.polylines(img, [poly.reshape((-1, 1, 2))], True, color=(0, 255, 0), thickness=2)
         except:
             pass
 
@@ -181,19 +174,13 @@ def load_test_dataset_iou(test_folder_name, config):
         total_bboxes_gt, total_img_path = load_synthtext_gt(config.test_data_dir)
 
     elif test_folder_name == "icdar2013":
-        total_bboxes_gt, total_img_path = load_icdar2013_gt(
-            dataFolder=config.test_data_dir
-        )
+        total_bboxes_gt, total_img_path = load_icdar2013_gt(dataFolder=config.test_data_dir)
 
     elif test_folder_name == "icdar2015":
-        total_bboxes_gt, total_img_path = load_icdar2015_gt(
-            dataFolder=config.test_data_dir
-        )
+        total_bboxes_gt, total_img_path = load_icdar2015_gt(dataFolder=config.test_data_dir)
 
     elif test_folder_name == "custom_data":
-        total_bboxes_gt, total_img_path = load_icdar2015_gt(
-            dataFolder=config.test_data_dir
-        )
+        total_bboxes_gt, total_img_path = load_icdar2015_gt(dataFolder=config.test_data_dir)
 
     else:
         print("not found test dataset")
@@ -205,21 +192,13 @@ def load_test_dataset_iou(test_folder_name, config):
 def viz_test(img, pre_output, pre_box, gt_box, img_name, result_dir, test_folder_name):
 
     if test_folder_name == "synthtext":
-        save_result_synth(
-            img_name, img[:, :, ::-1].copy(), pre_output, pre_box, gt_box, result_dir
-        )
+        save_result_synth(img_name, img[:, :, ::-1].copy(), pre_output, pre_box, gt_box, result_dir)
     elif test_folder_name == "icdar2013":
-        save_result_2013(
-            img_name, img[:, :, ::-1].copy(), pre_output, pre_box, gt_box, result_dir
-        )
+        save_result_2013(img_name, img[:, :, ::-1].copy(), pre_output, pre_box, gt_box, result_dir)
     elif test_folder_name == "icdar2015":
-        save_result_2015(
-            img_name, img[:, :, ::-1].copy(), pre_output, pre_box, gt_box, result_dir
-        )
+        save_result_2015(img_name, img[:, :, ::-1].copy(), pre_output, pre_box, gt_box, result_dir)
     elif test_folder_name == "custom_data":
-        save_result_2015(
-            img_name, img[:, :, ::-1].copy(), pre_output, pre_box, gt_box, result_dir
-        )
+        save_result_2015(img_name, img[:, :, ::-1].copy(), pre_output, pre_box, gt_box, result_dir)
     else:
         print("not found test dataset")
 
@@ -259,9 +238,7 @@ def main_eval(model_path, backbone, config, evaluator, result_dir, buffer, model
     else:
         if buffer is not None:
             # check all buffer value is None for distributed evaluation
-            assert all(
-                v is None for v in buffer
-            ), "Buffer already filled with another value."
+            assert all(v is None for v in buffer), "Buffer already filled with another value."
         slice_idx = len(total_imgs_bboxes_gt) // gpu_count
 
         # last gpu
@@ -269,9 +246,7 @@ def main_eval(model_path, backbone, config, evaluator, result_dir, buffer, model
             piece_imgs_path = total_imgs_path[gpu_idx * slice_idx :]
             # piece_imgs_bboxes_gt = total_imgs_bboxes_gt[gpu_idx * slice_idx:]
         else:
-            piece_imgs_path = total_imgs_path[
-                gpu_idx * slice_idx : (gpu_idx + 1) * slice_idx
-            ]
+            piece_imgs_path = total_imgs_path[gpu_idx * slice_idx : (gpu_idx + 1) * slice_idx]
             # piece_imgs_bboxes_gt = total_imgs_bboxes_gt[gpu_idx * slice_idx: (gpu_idx + 1) * slice_idx]
 
     model.eval()
@@ -330,6 +305,7 @@ def main_eval(model_path, backbone, config, evaluator, result_dir, buffer, model
     metrics = evaluator.combine_results(results)
     print(metrics)
     return metrics
+
 
 def cal_eval(config, data, res_dir_name, opt, mode):
     evaluator = DetectionIoUEvaluator()

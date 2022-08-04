@@ -27,19 +27,13 @@ def segment_region_score(watershed_param, region_score, word_image, pseudo_vis_o
     return np.array(boxes, dtype=np.float32)
 
 
-def exec_watershed_by_version(
-    watershed_param, region_score, word_image, pseudo_vis_opt
-):
+def exec_watershed_by_version(watershed_param, region_score, word_image, pseudo_vis_opt):
 
     func_name_map_dict = {
         "skimage": segment_region_score,
     }
 
     try:
-        return func_name_map_dict[watershed_param.version](
-            watershed_param, region_score, word_image, pseudo_vis_opt
-        )
+        return func_name_map_dict[watershed_param.version](watershed_param, region_score, word_image, pseudo_vis_opt)
     except:
-        print(
-            f"Watershed version {watershed_param.version} does not exist in func_name_map_dict."
-        )
+        print(f"Watershed version {watershed_param.version} does not exist in func_name_map_dict.")

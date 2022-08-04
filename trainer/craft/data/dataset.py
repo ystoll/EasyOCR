@@ -46,9 +46,7 @@ class CraftBaseDataset(Dataset):
         self.data_dir = data_dir
         self.saved_gt_dir = saved_gt_dir
         self.mean, self.variance = mean, variance
-        self.gaussian_builder = GaussianBuilder(
-            gauss_init_size, gauss_sigma, enlarge_region, enlarge_affinity
-        )
+        self.gaussian_builder = GaussianBuilder(gauss_init_size, gauss_sigma, enlarge_region, enlarge_affinity)
         self.aug = aug
         self.vis_test_dir = vis_test_dir
         self.vis_opt = vis_opt
@@ -59,9 +57,7 @@ class CraftBaseDataset(Dataset):
 
         self.pre_crop_area = []
 
-    def augment_image(
-        self, image, region_score, affinity_score, confidence_mask, word_level_char_bbox
-    ):
+    def augment_image(self, image, region_score, affinity_score, confidence_mask, word_level_char_bbox):
         augment_targets = [image, region_score, affinity_score, confidence_mask]
 
         if self.aug.random_scale.option:
@@ -70,19 +66,13 @@ class CraftBaseDataset(Dataset):
             )
 
         if self.aug.random_rotate.option:
-            augment_targets = random_rotate(
-                augment_targets, self.aug.random_rotate.max_angle
-            )
+            augment_targets = random_rotate(augment_targets, self.aug.random_rotate.max_angle)
 
         if self.aug.random_crop.option:
             if self.aug.random_crop.version == "random_crop_with_bbox":
-                augment_targets = random_crop_with_bbox(
-                    augment_targets, word_level_char_bbox, self.output_size
-                )
+                augment_targets = random_crop_with_bbox(augment_targets, word_level_char_bbox, self.output_size)
             elif self.aug.random_crop.version == "random_resize_crop_synth":
-                augment_targets = random_resize_crop_synth(
-                    augment_targets, self.output_size
-                )
+                augment_targets = random_resize_crop_synth(augment_targets, self.output_size)
             elif self.aug.random_crop.version == "random_resize_crop":
 
                 if len(self.pre_crop_area) > 0:
@@ -100,7 +90,10 @@ class CraftBaseDataset(Dataset):
                 )
 
             elif self.aug.random_crop.version == "random_crop":
-                augment_targets = random_crop(augment_targets, self.output_size,)
+                augment_targets = random_crop(
+                    augment_targets,
+                    self.output_size,
+                )
 
             else:
                 assert "Undefined RandomCrop version"
@@ -186,16 +179,10 @@ class CraftBaseDataset(Dataset):
             )
 
         region_score = self.resize_to_half(region_score, interpolation=cv2.INTER_CUBIC)
-        affinity_score = self.resize_to_half(
-            affinity_score, interpolation=cv2.INTER_CUBIC
-        )
-        confidence_mask = self.resize_to_half(
-            confidence_mask, interpolation=cv2.INTER_NEAREST
-        )
+        affinity_score = self.resize_to_half(affinity_score, interpolation=cv2.INTER_CUBIC)
+        confidence_mask = self.resize_to_half(confidence_mask, interpolation=cv2.INTER_NEAREST)
 
-        image = imgproc.normalizeMeanVariance(
-            np.array(image), mean=self.mean, variance=self.variance
-        )
+        image = imgproc.normalizeMeanVariance(np.array(image), mean=self.mean, variance=self.variance)
         image = image.transpose(2, 0, 1)
 
         return image, region_score, affinity_score, confidence_mask
@@ -255,9 +242,7 @@ class SynthTextDataSet(CraftBaseDataset):
             scale = float(self.output_size) / min(h, w)
         else:
             scale = 1.0
-        image = cv2.resize(
-            image, dsize=None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC
-        )
+        image = cv2.resize(image, dsize=None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
         char_bbox *= scale
         return image, char_bbox
 
@@ -265,17 +250,13 @@ class SynthTextDataSet(CraftBaseDataset):
         img_path = os.path.join(self.data_dir, self.img_names[index][0])
         image = cv2.imread(img_path, cv2.IMREAD_COLOR)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        all_char_bbox = self.char_bbox[index].transpose(
-            (2, 1, 0)
-        )  # shape : (Number of characters in image, 4, 2)
+        all_char_bbox = self.char_bbox[index].transpose((2, 1, 0))  # shape : (Number of characters in image, 4, 2)
 
         img_h, img_w, _ = image.shape
 
         confidence_mask = np.ones((img_h, img_w), dtype=np.float32)
 
-        words = [
-            re.split(" \n|\n |\n| ", word.strip()) for word in self.img_words[index]
-        ]
+        words = [re.split(" \n|\n |\n| ", word.strip()) for word in self.img_words[index]]
         words = list(itertools.chain(*words))
         words = [word for word in words if len(word) > 0]
 
@@ -351,14 +332,10 @@ class CustomDataset(CraftBaseDataset):
         )
         self.pseudo_vis_opt = pseudo_vis_opt
         self.do_not_care_label = do_not_care_label
-        self.pseudo_charbox_builder = PseudoCharBoxBuilder(
-            watershed_param, vis_test_dir, pseudo_vis_opt, self.gaussian_builder
-        )
+        self.pseudo_charbox_builder = PseudoCharBoxBuilder(watershed_param, vis_test_dir, pseudo_vis_opt, self.gaussian_builder)
         self.vis_index = list(range(1000))
         self.img_dir = os.path.join(data_dir, "ch4_training_images")
-        self.img_gt_box_dir = os.path.join(
-            data_dir, "ch4_training_localization_transcription_gt"
-        )
+        self.img_gt_box_dir = os.path.join(data_dir, "ch4_training_localization_transcription_gt")
         self.img_names = os.listdir(self.img_dir)
 
     def update_model(self, net):
@@ -391,12 +368,8 @@ class CustomDataset(CraftBaseDataset):
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        img_gt_box_path = os.path.join(
-            self.img_gt_box_dir, "gt_%s.txt" % os.path.splitext(img_name)[0]
-        )
-        word_bboxes, words = self.load_img_gt_box(
-            img_gt_box_path
-        )  # shape : (Number of word bbox, 4, 2)
+        img_gt_box_path = os.path.join(self.img_gt_box_dir, "gt_%s.txt" % os.path.splitext(img_name)[0])
+        word_bboxes, words = self.load_img_gt_box(img_gt_box_path)  # shape : (Number of word bbox, 4, 2)
         confidence_mask = np.ones((image.shape[0], image.shape[1]), np.float32)
 
         word_level_char_bbox = []
@@ -421,9 +394,7 @@ class CustomDataset(CraftBaseDataset):
                 pseudo_char_bbox,
                 confidence,
                 horizontal_text_bool,
-            ) = self.pseudo_charbox_builder.build_char_box(
-                self.net, self.gpu, image, word_bboxes[i], words[i], img_name=img_name
-            )
+            ) = self.pseudo_charbox_builder.build_char_box(self.net, self.gpu, image, word_bboxes[i], words[i], img_name=img_name)
 
             cv2.fillPoly(confidence_mask, [np.int32(_word_bboxes[i])], confidence)
             do_care_words.append(words[i])
@@ -462,9 +433,7 @@ class CustomDataset(CraftBaseDataset):
             affinity_score = np.zeros((img_h, img_w), dtype=np.float32)
             all_affinity_bbox = []
         else:
-            region_score = self.gaussian_builder.generate_region(
-                img_h, img_w, word_level_char_bbox, horizontal_text_bools
-            )
+            region_score = self.gaussian_builder.generate_region(img_h, img_w, word_level_char_bbox, horizontal_text_bools)
             affinity_score, all_affinity_bbox = self.gaussian_builder.generate_affinity(
                 img_h, img_w, word_level_char_bbox, horizontal_text_bools
             )
@@ -494,33 +463,23 @@ class CustomDataset(CraftBaseDataset):
         image = cv2.imread(img_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        img_gt_box_path = os.path.join(
-            self.img_gt_box_dir, "gt_%s.txt" % os.path.splitext(img_name)[0]
-        )
+        img_gt_box_path = os.path.join(self.img_gt_box_dir, "gt_%s.txt" % os.path.splitext(img_name)[0])
         word_bboxes, words = self.load_img_gt_box(img_gt_box_path)
         image, word_bboxes = rescale(image, word_bboxes)
         img_h, img_w, _ = image.shape
 
         query_idx = int(self.img_names[index].split(".")[0].split("_")[1])
 
-        saved_region_scores_path = os.path.join(
-            self.saved_gt_dir, f"res_img_{query_idx}_region.jpg"
-        )
-        saved_affi_scores_path = os.path.join(
-            self.saved_gt_dir, f"res_img_{query_idx}_affi.jpg"
-        )
-        saved_cf_mask_path = os.path.join(
-            self.saved_gt_dir, f"res_img_{query_idx}_cf_mask_thresh_0.6.jpg"
-        )
+        saved_region_scores_path = os.path.join(self.saved_gt_dir, f"res_img_{query_idx}_region.jpg")
+        saved_affi_scores_path = os.path.join(self.saved_gt_dir, f"res_img_{query_idx}_affi.jpg")
+        saved_cf_mask_path = os.path.join(self.saved_gt_dir, f"res_img_{query_idx}_cf_mask_thresh_0.6.jpg")
         region_score = cv2.imread(saved_region_scores_path, cv2.IMREAD_GRAYSCALE)
         affinity_score = cv2.imread(saved_affi_scores_path, cv2.IMREAD_GRAYSCALE)
         confidence_mask = cv2.imread(saved_cf_mask_path, cv2.IMREAD_GRAYSCALE)
 
         region_score = cv2.resize(region_score, (img_w, img_h))
         affinity_score = cv2.resize(affinity_score, (img_w, img_h))
-        confidence_mask = cv2.resize(
-            confidence_mask, (img_w, img_h), interpolation=cv2.INTER_NEAREST
-        )
+        confidence_mask = cv2.resize(confidence_mask, (img_w, img_h), interpolation=cv2.INTER_NEAREST)
 
         region_score = region_score.astype(np.float32) / 255
         affinity_score = affinity_score.astype(np.float32) / 255

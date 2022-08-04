@@ -70,7 +70,7 @@ class Trainer(object):
         return param
 
     def adjust_learning_rate(self, optimizer, gamma, step, lr):
-        lr = lr * (gamma ** step)
+        lr = lr * (gamma**step)
         for param_group in optimizer.param_groups:
             param_group["lr"] = lr
         return param_group["lr"]
@@ -87,9 +87,7 @@ class Trainer(object):
     def iou_eval(self, dataset, train_step, save_param_path, buffer, model):
         test_config = DotDict(self.config.test[dataset])
 
-        val_result_dir = os.path.join(
-            self.config.results_dir, "{}/{}".format(dataset + "_iou", str(train_step))
-        )
+        val_result_dir = os.path.join(self.config.results_dir, "{}/{}".format(dataset + "_iou", str(train_step)))
 
         evaluator = DetectionIoUEvaluator()
 
@@ -107,9 +105,7 @@ class Trainer(object):
             wandb.log(
                 {
                     "{} IoU Recall".format(dataset): np.round(metrics["recall"], 3),
-                    "{} IoU Precision".format(dataset): np.round(
-                        metrics["precision"], 3
-                    ),
+                    "{} IoU Precision".format(dataset): np.round(metrics["precision"], 3),
                     "{} IoU F1-score".format(dataset): np.round(metrics["hmean"], 3),
                 }
             )
@@ -153,10 +149,7 @@ class Trainer(object):
             scaler = torch.cuda.amp.GradScaler()
 
             # load model
-            if (
-                self.config.train.ckpt_path is not None
-                and self.config.train.st_iter != 0
-            ):
+            if self.config.train.ckpt_path is not None and self.config.train.st_iter != 0:
                 scaler.load_state_dict(copyStateDict(self.net_param["scaler"]))
         else:
             scaler = None
@@ -177,7 +170,12 @@ class Trainer(object):
             self.trn_sampler.set_epoch(train_step)
             for (
                 index,
-                (image, region_image, affinity_image, confidence_mask,),
+                (
+                    image,
+                    region_image,
+                    affinity_image,
+                    confidence_mask,
+                ),
             ) in enumerate(trn_loader):
                 craft.train()
                 if train_step > 0 and train_step % self.config.train.lr_decay == 0:
@@ -246,9 +244,7 @@ class Trainer(object):
                     print(
                         "{}, training_step: {}|{}, learning rate: {:.8f}, "
                         "training_loss: {:.5f}, avg_batch_time: {:.5f}".format(
-                            time.strftime(
-                                "%Y-%m-%d:%H:%M:%S", time.localtime(time.time())
-                            ),
+                            time.strftime("%Y-%m-%d:%H:%M:%S", time.localtime(time.time())),
                             train_step,
                             whole_training_step,
                             training_lr,
@@ -259,10 +255,7 @@ class Trainer(object):
                     if self.gpu == 0 and self.config.wandb_opt:
                         wandb.log({"train_step": train_step, "mean_loss": mean_loss})
 
-                if (
-                    train_step % self.config.train.eval_interval == 0
-                    and train_step != 0
-                ):
+                if train_step % self.config.train.eval_interval == 0 and train_step != 0:
 
                     # initialize all buffer value with zero
                     if self.gpu == 0:
@@ -276,21 +269,11 @@ class Trainer(object):
                         "craft": craft.state_dict(),
                         "optimizer": optimizer.state_dict(),
                     }
-                    save_param_path = (
-                        self.config.results_dir
-                        + "/CRAFT_clr_"
-                        + repr(train_step)
-                        + ".pth"
-                    )
+                    save_param_path = self.config.results_dir + "/CRAFT_clr_" + repr(train_step) + ".pth"
 
                     if self.config.train.amp:
                         save_param_dic["scaler"] = scaler.state_dict()
-                        save_param_path = (
-                            self.config.results_dir
-                            + "/CRAFT_clr_amp_"
-                            + repr(train_step)
-                            + ".pth"
-                        )
+                        save_param_path = self.config.results_dir + "/CRAFT_clr_amp_" + repr(train_step) + ".pth"
 
                     torch.save(save_param_dic, save_param_path)
 
@@ -315,18 +298,11 @@ class Trainer(object):
                 "craft": craft.state_dict(),
                 "optimizer": optimizer.state_dict(),
             }
-            save_param_path = (
-                self.config.results_dir + "/CRAFT_clr_" + repr(train_step) + ".pth"
-            )
+            save_param_path = self.config.results_dir + "/CRAFT_clr_" + repr(train_step) + ".pth"
 
             if self.config.train.amp:
                 save_param_dic["scaler"] = scaler.state_dict()
-                save_param_path = (
-                    self.config.results_dir
-                    + "/CRAFT_clr_amp_"
-                    + repr(train_step)
-                    + ".pth"
-                )
+                save_param_path = self.config.results_dir + "/CRAFT_clr_amp_" + repr(train_step) + ".pth"
             torch.save(save_param_dic, save_param_path)
 
 
@@ -339,9 +315,7 @@ def main():
         type=str,
         help="Load configuration",
     )
-    parser.add_argument(
-        "--port", "--use ddp port", default="2646", type=str, help="Load configuration"
-    )
+    parser.add_argument("--port", "--use ddp port", default="2646", type=str, help="Load configuration")
 
     args = parser.parse_args()
 
@@ -360,9 +334,7 @@ def main():
         os.makedirs(res_dir)
 
     # Duplicate yaml file to result_dir
-    shutil.copy(
-        "config/" + args.yaml + ".yaml", os.path.join(res_dir, args.yaml) + ".yaml"
-    )
+    shutil.copy("config/" + args.yaml + ".yaml", os.path.join(res_dir, args.yaml) + ".yaml")
 
     ngpus_per_node = torch.cuda.device_count()
     print(f"Total device num : {ngpus_per_node}")
@@ -373,9 +345,15 @@ def main():
     torch.multiprocessing.spawn(
         main_worker,
         nprocs=ngpus_per_node,
-        args=(args.port, ngpus_per_node, config, buffer_dict, exp_name,),
+        args=(
+            args.port,
+            ngpus_per_node,
+            config,
+            buffer_dict,
+            exp_name,
+        ),
     )
-    print('flag5')
+    print("flag5")
 
 
 def main_worker(gpu, port, ngpus_per_node, config, buffer_dict, exp_name):
@@ -403,6 +381,7 @@ def main_worker(gpu, port, ngpus_per_node, config, buffer_dict, exp_name):
     if gpu == 0 and config["wandb_opt"]:
         wandb.finish()
     torch.distributed.destroy_process_group()
+
 
 if __name__ == "__main__":
     main()

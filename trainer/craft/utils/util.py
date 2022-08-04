@@ -20,15 +20,11 @@ def copyStateDict(state_dict):
     return new_state_dict
 
 
-def saveInput(
-    imagename, vis_dir, image, region_scores, affinity_scores, confidence_mask
-):
+def saveInput(imagename, vis_dir, image, region_scores, affinity_scores, confidence_mask):
     image = np.uint8(image.copy())
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-    boxes, polys = craft_utils.getDetBoxes(
-        region_scores, affinity_scores, 0.85, 0.2, 0.5, False
-    )
+    boxes, polys = craft_utils.getDetBoxes(region_scores, affinity_scores, 0.85, 0.2, 0.5, False)
 
     if image.shape[0] / region_scores.shape[0] >= 2:
         boxes = np.array(boxes, np.int32) * 2
@@ -48,9 +44,7 @@ def saveInput(
     height, width, channel = image.shape
     overlay_region = cv2.resize(target_gaussian_heatmap_color, (width, height))
     overlay_aff = cv2.resize(target_gaussian_affinity_heatmap_color, (width, height))
-    confidence_mask_gray = cv2.resize(
-        confidence_mask_gray, (width, height), interpolation=cv2.INTER_NEAREST
-    )
+    confidence_mask_gray = cv2.resize(confidence_mask_gray, (width, height), interpolation=cv2.INTER_NEAREST)
     overlay_region = cv2.addWeighted(image, 0.4, overlay_region, 0.6, 5)
     overlay_aff = cv2.addWeighted(image, 0.4, overlay_aff, 0.7, 6)
 
@@ -131,7 +125,7 @@ def saveImage(
 
 def save_parser(args):
 
-    """ final options """
+    """final options"""
     with open(f"{args.results_dir}/opt.txt", "a", encoding="utf-8") as opt_file:
         opt_log = "------------ Options -------------\n"
         arg = vars(args)
