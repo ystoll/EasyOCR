@@ -1,18 +1,17 @@
 """
 End-to-End Multi-Lingual Optical Character Recognition (OCR) Solution
 """
-
-from setuptools import setup
 from io import open
+from setuptools import setup
 
 with open("requirements.txt", encoding="utf-8-sig") as f:
     requirements = f.readlines()
 
 
 def readme():
-    with open("README.md", encoding="utf-8-sig") as f:
-        README = f.read()
-    return README
+    with open("README.md", encoding="utf-8-sig") as f_readme:
+        content_readme = f_readme.read()
+    return content_readme
 
 
 setup(

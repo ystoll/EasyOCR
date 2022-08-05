@@ -127,7 +127,8 @@ def parse_args():
         "--rotation_info",
         type=list,
         default=None,
-        help="Allow EasyOCR to rotate each text box and return the one with the best confident score. Eligible values are 90, 180 and 270. For example, try [90, 180 ,270] for all possible text orientations.",
+        help=("Allow EasyOCR to rotate each text box and return the one with the best confident score."
+            "Eligible values are 90, 180 and 270. For example, try [90, 180 ,270] for all possible text orientations."),
     )
     parser.add_argument(
         "--paragraph",
@@ -146,7 +147,9 @@ def parse_args():
         "--contrast_ths",
         type=float,
         default=0.1,
-        help="Text box with contrast lower than this value will be passed into model 2 times. First is with original image and second with contrast adjusted to 'adjust_contrast' value. The one with more confident level will be returned as a result.",
+        help=("Text box with contrast lower than this value will be passed into model 2 times."
+              "First is with original image and second with contrast adjusted to 'adjust_contrast' value."
+              "The one with more confident level will be returned as a result."),
     )
     parser.add_argument(
         "--adjust_contrast",
@@ -224,7 +227,8 @@ def parse_args():
         "--add_margin",
         type=float,
         default=0.1,
-        help="Extend bounding boxes in all direction by certain value. This is important for language with complex script (E.g. Thai).",
+        help=("Extend bounding boxes in all direction by certain value."
+        "This is important for language with complex script (E.g. Thai)."),
     )
 
     args = parser.parse_args()

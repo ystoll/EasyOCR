@@ -4,7 +4,7 @@
 
 There are 2 options to train your own recognition model:
 
-**1. Open-source approach**
+### 1. Open-source approach
 
 For the open-source approach, you can use your own data or generate your own dataset. To generate your own data, we recommend using
 [TextRecognitionDataGenerator](https://github.com/Belval/TextRecognitionDataGenerator). We provide an example of a dataset [here](https://jaided.ai/easyocr/modelhub/).
@@ -18,7 +18,7 @@ Please do not create an issue about data generation and model training in this r
 
 Note: We also provide our version of a training script [here](https://github.com/JaidedAI/EasyOCR/tree/master/trainer). It is a modified version from [deep-text-recognition-benchmark](https://github.com/clovaai/deep-text-recognition-benchmark).
 
-**2. Web-based approach**
+### 2. Web-based approach
 
 Jaided AI provides a web-based (paid) service for training your own model [here](https://jaided.ai/). You can train your model on the cloud and export it for local deployment. All 3 files are downloadable once the model has finished training.
 
