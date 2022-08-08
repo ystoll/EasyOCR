@@ -1,22 +1,22 @@
-"""  
+"""
 Copyright (c) 2019-present NAVER Corp.
 MIT License
 """
 
 # -*- coding: utf-8 -*-
+import math
 import numpy as np
 import cv2
-import math
 from scipy.ndimage import label
 
-""" auxiliary functions """
+# """ auxiliary functions """
 # unwarp corodinates
 def warpCoord(Minv, pt):
     out = np.matmul(Minv, (pt[0], pt[1], 1))
     return np.array([out[0] / out[2], out[1] / out[2]])
 
 
-""" end of auxiliary functions """
+# """ end of auxiliary functions """
 
 
 def getDetBoxes_core(textmap, linkmap, text_threshold, link_threshold, low_text, estimate_num_chars=False):
@@ -25,9 +25,9 @@ def getDetBoxes_core(textmap, linkmap, text_threshold, link_threshold, low_text,
     textmap = textmap.copy()
     img_h, img_w = textmap.shape
 
-    """ labeling method """
-    ret, text_score = cv2.threshold(textmap, low_text, 1, 0)
-    ret, link_score = cv2.threshold(linkmap, link_threshold, 1, 0)
+#    """ labeling method """
+    _, text_score = cv2.threshold(textmap, low_text, 1, 0)
+    _, link_score = cv2.threshold(linkmap, link_threshold, 1, 0)
 
     text_score_comb = np.clip(text_score + link_score, 0, 1)
     nLabels, labels, stats, centroids = cv2.connectedComponentsWithStats(text_score_comb.astype(np.uint8), connectivity=4)
@@ -124,7 +124,7 @@ def getPoly_core(boxes, labels, mapper, linkmap):
         word_label[word_label != cur_label] = 0
         word_label[word_label > 0] = 1
 
-        """ Polygon generation """
+#        """ Polygon generation """
         # find top/bottom contours
         cp = []
         max_len = -1
