@@ -1,3 +1,6 @@
+"""
+Main API for the easyocr package.
+"""
 # -*- coding: utf-8 -*-
 import os
 import sys
@@ -276,6 +279,24 @@ class Reader(object):
             )
 
     def set_model_language(self, language, lang_list, list_lang, list_lang_string):
+        """set_model_language _summary_
+
+        Parameters
+        ----------
+        language : _type_
+            _description_
+        lang_list : _type_
+            _description_
+        list_lang : _type_
+            _description_
+        list_lang_string : _type_
+            _description_
+
+        Raises
+        ------
+        ValueError
+            _description_
+        """
         self.model_lang = language
         if set(lang_list) - set(list_lang) != set():
             if language == "ch_tra" or language == "ch_sim":
@@ -283,6 +304,18 @@ class Reader(object):
             raise ValueError(language.capitalize() + " is only compatible with English, try lang_list=" + list_lang_string)
 
     def get_char(self, file_name):
+        """get_char _summary_
+
+        Parameters
+        ----------
+        file_name : _type_
+            _description_
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
         char_file = os.path.join(BASE_PATH, "character", file_name)
         with open(char_file, "r", encoding="utf-8-sig") as input_file:
             list_ = input_file.read().splitlines()
@@ -290,6 +323,12 @@ class Reader(object):
         return char
 
     def set_language_list(self, lang_list, model):
+        """AI is creating summary for set_language_list
+
+        Args:
+            lang_list ([type]): [description]
+            model ([type]): [description]
+        """
         self.lang_char = []
         for local_lang in lang_list:
             char_file = os.path.join(BASE_PATH, "character", local_lang + "_char.txt")
@@ -322,6 +361,44 @@ class Reader(object):
         reformat=True,
         optimal_num_chars=None,
     ):
+        """detect _summary_
+
+        Parameters
+        ----------
+        img : _type_
+            _description_
+        min_size : int, optional
+            _description_, by default 20
+        text_threshold : float, optional
+            _description_, by default 0.7
+        low_text : float, optional
+            _description_, by default 0.4
+        link_threshold : float, optional
+            _description_, by default 0.4
+        canvas_size : int, optional
+            _description_, by default 2560
+        mag_ratio : float, optional
+            _description_, by default 1.0
+        slope_ths : float, optional
+            _description_, by default 0.1
+        ycenter_ths : float, optional
+            _description_, by default 0.5
+        height_ths : float, optional
+            _description_, by default 0.5
+        width_ths : float, optional
+            _description_, by default 0.5
+        add_margin : float, optional
+            _description_, by default 0.1
+        reformat : bool, optional
+            _description_, by default True
+        optimal_num_chars : _type_, optional
+            _description_, by default None
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
 
         if reformat:
             img, _ = reformat_input(img)
@@ -374,6 +451,54 @@ class Reader(object):
         reformat=True,
         output_format="standard",
     ):
+        """recognize _summary_
+
+        Parameters
+        ----------
+        img_cv_grey : _type_
+            _description_
+        horizontal_list : _type_, optional
+            _description_, by default None
+        free_list : _type_, optional
+            _description_, by default None
+        decoder : str, optional
+            _description_, by default "greedy"
+        beam_width : int, optional
+            _description_, by default 5
+        batch_size : int, optional
+            _description_, by default 1
+        workers : int, optional
+            _description_, by default 0
+        allowlist : _type_, optional
+            _description_, by default None
+        blocklist : _type_, optional
+            _description_, by default None
+        detail : int, optional
+            _description_, by default 1
+        rotation_info : _type_, optional
+            _description_, by default None
+        paragraph : bool, optional
+            _description_, by default False
+        contrast_ths : float, optional
+            _description_, by default 0.1
+        adjust_contrast : float, optional
+            _description_, by default 0.5
+        filter_ths : float, optional
+            _description_, by default 0.003
+        y_ths : float, optional
+            _description_, by default 0.5
+        x_ths : float, optional
+            _description_, by default 1.0
+        reformat : bool, optional
+            _description_, by default True
+        output_format : str, optional
+            _description_, by default "standard"
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
 
         if reformat:
             _, img_cv_grey = reformat_input(img_cv_grey)
