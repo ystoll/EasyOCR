@@ -1,29 +1,31 @@
-import os
+"""
+Performs validation over a model.
+"""
+# import argparse
+# import os
+# import string
 import time
-import string
-import argparse
 
+# import numpy as np
 import torch
-import torch.backends.cudnn as cudnn
-import torch.utils.data
+# import torch.backends.cudnn as cudnn
 import torch.nn.functional as F
-import numpy as np
+import torch.utils.data
+# from dataset import AlignCollate, hierarchical_dataset
+# from model import Model
 from nltk.metrics.distance import edit_distance
-
-from utils import CTCLabelConverter, AttnLabelConverter, Averager
-from dataset import hierarchical_dataset, AlignCollate
-from model import Model
-
+# from utils import AttnLabelConverter, Averager, CTCLabelConverter
+from utils import Averager
 
 def validation(model, criterion, evaluation_loader, converter, opt, device):
     """validation or evaluation"""
     n_correct = 0
-    norm_ED = 0
+    norm_ed = 0
     length_of_data = 0
     infer_time = 0
     valid_loss_avg = Averager()
 
-    for i, (image_tensors, labels) in enumerate(evaluation_loader):
+    for (image_tensors, labels) in evaluation_loader:
         batch_size = image_tensors.size(0)
         length_of_data = length_of_data + batch_size
         image = image_tensors.to(device)
@@ -49,7 +51,7 @@ def validation(model, criterion, evaluation_loader, converter, opt, device):
                 preds_index = preds_index.view(-1)
                 preds_str = converter.decode_greedy(preds_index.data, preds_size.data)
             elif opt.decode == "beamsearch":
-                preds_str = converter.decode_beamsearch(preds, beamWidth=2)
+                preds_str = converter.decode_beamsearch(preds, beam_width=2)
 
         else:
             preds = model(image, text_for_pred, is_train=False)
@@ -72,32 +74,32 @@ def validation(model, criterion, evaluation_loader, converter, opt, device):
         preds_max_prob, _ = preds_prob.max(dim=2)
         confidence_score_list = []
 
-        for gt, pred, pred_max_prob in zip(labels, preds_str, preds_max_prob):
+        for g_t, pred, pred_max_prob in zip(labels, preds_str, preds_max_prob):
             if "Attn" in opt.Prediction:
-                gt = gt[: gt.find("[s]")]
-                pred_EOS = pred.find("[s]")
-                pred = pred[:pred_EOS]  # prune after "end of sentence" token ([s])
-                pred_max_prob = pred_max_prob[:pred_EOS]
+                g_t = g_t[:g_t.find("[s]")]
+                pred_eos = pred.find("[s]")
+                pred = pred[:pred_eos]  # prune after "end of sentence" token ([s])
+                pred_max_prob = pred_max_prob[:pred_eos]
 
-            if pred == gt:
+            if pred == g_t:
                 n_correct += 1
 
-            """
-            (old version) ICDAR2017 DOST Normalized Edit Distance https://rrc.cvc.uab.es/?ch=7&com=tasks
-            "For each word we calculate the normalized edit distance to the length of the ground truth transcription." 
-            if len(gt) == 0:
-                norm_ED += 1
-            else:
-                norm_ED += edit_distance(pred, gt) / len(gt)
-            """
+            # """
+            # (old version) ICDAR2017 DOST Normalized Edit Distance https://rrc.cvc.uab.es/?ch=7&com=tasks
+            # "For each word we calculate the normalized edit distance to the length of the ground truth transcription."
+            # if len(g_t) == 0:
+            #     norm_ed += 1
+            # else:
+            #     norm_ed += edit_distance(pred, g_t) / len(g_t)
+            # """
 
             # ICDAR2019 Normalized Edit Distance
-            if len(gt) == 0 or len(pred) == 0:
-                norm_ED += 0
-            elif len(gt) > len(pred):
-                norm_ED += 1 - edit_distance(pred, gt) / len(gt)
+            if len(g_t) == 0 or len(pred) == 0:
+                norm_ed += 0
+            elif len(g_t) > len(pred):
+                norm_ed += 1 - edit_distance(pred, g_t) / len(g_t)
             else:
-                norm_ED += 1 - edit_distance(pred, gt) / len(pred)
+                norm_ed += 1 - edit_distance(pred, g_t) / len(pred)
 
             # calculate confidence score (= multiply of pred_max_prob)
             try:
@@ -105,9 +107,9 @@ def validation(model, criterion, evaluation_loader, converter, opt, device):
             except:
                 confidence_score = 0  # for empty pred case, when prune after "end of sentence" token ([s])
             confidence_score_list.append(confidence_score)
-            # print(pred, gt, pred==gt, confidence_score)
+            # print(pred, g_t, pred==g_t, confidence_score)
 
     accuracy = n_correct / float(length_of_data) * 100
-    norm_ED = norm_ED / float(length_of_data)  # ICDAR2019 Normalized Edit Distance
+    norm_ed = norm_ed / float(length_of_data)  # ICDAR2019 Normalized Edit Distance
 
-    return valid_loss_avg.val(), accuracy, norm_ED, preds_str, confidence_score_list, labels, infer_time, length_of_data
+    return valid_loss_avg.val(), accuracy, norm_ed, preds_str, confidence_score_list, labels, infer_time, length_of_data

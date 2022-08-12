@@ -1,20 +1,20 @@
-import os
+# import os
+import random
 import sys
 import time
-import random
+from test import validation
+
+import numpy as np
 import torch
-import torch.backends.cudnn as cudnn
+# import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.init as init
 import torch.optim as optim
 import torch.utils.data
-from torch.cuda.amp import autocast, GradScaler
-import numpy as np
-
-from utils import CTCLabelConverter, AttnLabelConverter, Averager
-from dataset import hierarchical_dataset, AlignCollate, Batch_Balanced_Dataset
+from dataset import AlignCollate, Batch_Balanced_Dataset, hierarchical_dataset
 from model import Model
-from test import validation
+from torch.cuda.amp import GradScaler, autocast
+from utils import AttnLabelConverter, Averager, CTCLabelConverter
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -62,7 +62,7 @@ def train(opt, show_number=2, amp=False):
     log.write("-" * 80 + "\n")
     log.close()
 
-    """ model configuration """
+    # """ model configuration """
     if "CTC" in opt.Prediction:
         converter = CTCLabelConverter(opt.character)
     else:
@@ -129,7 +129,7 @@ def train(opt, show_number=2, amp=False):
     print(model)
     count_parameters(model)
 
-    """ setup loss """
+    # """ setup loss """
     if "CTC" in opt.Prediction:
         criterion = torch.nn.CTCLoss(zero_infinity=True).to(device)
     else:
@@ -166,7 +166,7 @@ def train(opt, show_number=2, amp=False):
     print("Optimizer:")
     print(optimizer)
 
-    """ final options """
+    # """ final options """
     # print(opt)
     with open(f"./saved_models/{opt.experiment_name}/opt.txt", "a", encoding="utf8") as opt_file:
         opt_log = "------------ Options -------------\n"
@@ -177,7 +177,7 @@ def train(opt, show_number=2, amp=False):
         print(opt_log)
         opt_file.write(opt_log)
 
-    """ start training """
+    # """ start training """
     start_iter = 0
     if opt.saved_model != "":
         try:
