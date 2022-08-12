@@ -101,7 +101,7 @@ class AlignCollate(object):
 
 
 def recognizer_predict(
-    model, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder="greedy", beamWidth=5, device="cpu"
+    model, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder="greedy", beam_width=5, device="cpu"
 ):
     model.eval()
     result = []
@@ -133,10 +133,10 @@ def recognizer_predict(
                 preds_str = converter.decode_greedy(preds_index.data.cpu().detach().numpy(), preds_size.data)
             elif decoder == "beamsearch":
                 k = preds_prob.cpu().detach().numpy()
-                preds_str = converter.decode_beamsearch(k, beamWidth=beamWidth)
+                preds_str = converter.decode_beamsearch(k, beam_width=beam_width)
             elif decoder == "wordbeamsearch":
                 k = preds_prob.cpu().detach().numpy()
-                preds_str = converter.decode_wordbeamsearch(k, beamWidth=beamWidth)
+                preds_str = converter.decode_wordbeamsearch(k, beam_width=beam_width)
 
             preds_prob = preds_prob.cpu().detach().numpy()
             values = preds_prob.max(axis=2)
@@ -197,7 +197,7 @@ def get_text(
     image_list,
     ignore_char="",
     decoder="greedy",
-    beamWidth=5,
+    beam_width=5,
     batch_size=1,
     contrast_ths=0.1,
     adjust_contrast=0.5,
@@ -225,7 +225,7 @@ def get_text(
 
     # predict first round
     result1 = recognizer_predict(
-        recognizer, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder, beamWidth, device=device
+        recognizer, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder, beam_width, device=device
     )
 
     # predict second round
@@ -243,7 +243,7 @@ def get_text(
             pin_memory=True,
         )
         result2 = recognizer_predict(
-            recognizer, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder, beamWidth, device=device
+            recognizer, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder, beam_width, device=device
         )
 
     result = []

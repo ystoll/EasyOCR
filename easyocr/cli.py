@@ -87,7 +87,7 @@ def parse_args():
         help="decoder algorithm",
     )
     parser.add_argument(
-        "--beamWidth",
+        "--beam_width",
         type=int,
         default=5,
         help="size of beam search",
@@ -252,7 +252,7 @@ def main():
     for line in reader.readtext(
         args.file,
         decoder=args.decoder,
-        beamWidth=args.beamWidth,
+        beam_width=args.beam_width,
         batch_size=args.batch_size,
         workers=args.workers,
         allowlist=args.allowlist,

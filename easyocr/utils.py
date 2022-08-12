@@ -196,7 +196,7 @@ def addBeam(beamState, labeling):
         beamState.entries[labeling] = BeamEntry()
 
 
-def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list=[]):
+def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
     blankIdx = 0
     maxT, maxC = mat.shape
 
@@ -211,7 +211,7 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list=[]):
     for t in range(maxT):
         curr = BeamState()
         # get beam-labelings of best beams
-        bestLabelings = last.sort()[0:beamWidth]
+        bestLabelings = last.sort()[0:beam_width]
         # go over best beams
         for labeling in bestLabelings:
             # probability of paths ending with a non-blank
@@ -360,14 +360,14 @@ class CTCLabelConverter(object):
             index += l
         return texts
 
-    def decode_beamsearch(self, mat, beamWidth=5):
+    def decode_beamsearch(self, mat, beam_width=5):
         texts = []
         for i in range(mat.shape[0]):
-            t = ctcBeamSearch(mat[i], self.character, self.ignore_idx, None, beamWidth=beamWidth)
+            t = ctcBeamSearch(mat[i], self.character, self.ignore_idx, None, beam_width=beam_width)
             texts.append(t)
         return texts
 
-    def decode_wordbeamsearch(self, mat, beamWidth=5):
+    def decode_wordbeamsearch(self, mat, beam_width=5):
         texts = []
         argmax = np.argmax(mat, axis=2)
 
@@ -384,7 +384,7 @@ class CTCLabelConverter(object):
                 for j, list_idx in enumerate(group):
                     matrix = mat[i, list_idx, :]
                     t = ctcBeamSearch(
-                        matrix, self.character, self.ignore_idx, None, beamWidth=beamWidth, dict_list=self.dict_list
+                        matrix, self.character, self.ignore_idx, None, beam_width=beam_width, dict_list=self.dict_list
                     )
                     if j == 0:
                         string += t
@@ -401,7 +401,7 @@ class CTCLabelConverter(object):
                         dict_list = []
                     else:
                         dict_list = self.dict_list[word[0]]
-                    t = ctcBeamSearch(matrix, self.character, self.ignore_idx, None, beamWidth=beamWidth, dict_list=dict_list)
+                    t = ctcBeamSearch(matrix, self.character, self.ignore_idx, None, beam_width=beam_width, dict_list=dict_list)
                     string += t
             texts.append(string)
         return texts
