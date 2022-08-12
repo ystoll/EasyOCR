@@ -1,9 +1,10 @@
 import argparse
 
+import numpy as np
 import onnx
 import torch
+
 import easyocr
-import numpy as np
 
 
 def export_detector(
@@ -19,6 +20,38 @@ def export_detector(
     detector=True,
     recognizer=True,
 ):
+    """export_detector _summary_
+
+    Parameters
+    ----------
+    detector_onnx_save_path : _type_
+        _description_
+    in_shape : list, optional
+        _description_, by default [1, 3, 608, 800]
+    lang_list : list, optional
+        _description_, by default ["en"]
+    model_storage_directory : _type_, optional
+        _description_, by default None
+    user_network_directory : _type_, optional
+        _description_, by default None
+    download_enabled : bool, optional
+        _description_, by default True
+    dynamic : bool, optional
+        _description_, by default True
+    device : str, optional
+        _description_, by default "cpu"
+    quantize : bool, optional
+        _description_, by default True
+    detector : bool, optional
+        _description_, by default True
+    recognizer : bool, optional
+        _description_, by default True
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
     if dynamic is False:
         print("WARNING: it is recommended to use -d dynamic flag when exporting onnx")
     ocr_reader = easyocr.Reader(
@@ -91,6 +124,18 @@ def export_detector(
 
 
 def parse_args():
+    """parse_args _summary_
+
+    Returns
+    -------
+    _type_
+        _description_
+
+    Raises
+    ------
+    ValueError
+        _description_
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-l", "--lang_list", nargs="+", type=str, default=["en"], help="-l en ch_sim ... (language lists for easyocr)"
@@ -112,11 +157,13 @@ def parse_args():
     dpath = args.detector_onnx_save_path
     args.detector_onnx_save_path = None if dpath == "None" else dpath
     if len(args.in_shape) != 4:
-        raise ValueError(f"Input shape must have four values (bsize, channel, height, width) eg. 1 3 608 800")
+        raise ValueError("Input shape must have four values (bsize, channel, height, width) eg. 1 3 608 800")
     return args
 
 
 def main():
+    """main _summary_
+    """
     args = parse_args()
     export_detector(
         detector_onnx_save_path=args.detector_onnx_save_path,

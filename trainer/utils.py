@@ -42,9 +42,9 @@ class BeamState:
         sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal * x.prText)
         return [x.labeling for x in sortedBeams]
 
-    def wordsearch(self, classes, ignore_idx, beamWidth, dict_list):
+    def wordsearch(self, classes, ignore_idx, beam_width, dict_list):
         beams = [v for (_, v) in self.entries.items()]
-        sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal * x.prText)[:beamWidth]
+        sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal * x.prText)[:beam_width]
 
         for j, candidate in enumerate(sortedBeams):
             idx_list = candidate.labeling
@@ -83,7 +83,7 @@ def addBeam(beamState, labeling):
         beamState.entries[labeling] = BeamEntry()
 
 
-def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list=[]):
+def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
     "beam search as described by the paper of Hwang et al. and the paper of Graves et al."
 
     # blankIdx = len(classes)
@@ -102,7 +102,7 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list=[]):
         curr = BeamState()
 
         # get beam-labelings of best beams
-        bestLabelings = last.sort()[0:beamWidth]
+        bestLabelings = last.sort()[0:beam_width]
 
         # go over best beams
         for labeling in bestLabelings:
@@ -176,7 +176,7 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list=[]):
             ):  # removing repeated characters and blank.
                 res += classes[l]
     else:
-        res = last.wordsearch(classes, ignore_idx, beamWidth, dict_list)
+        res = last.wordsearch(classes, ignore_idx, beam_width, dict_list)
 
     return res
 
@@ -299,15 +299,15 @@ class CTCLabelConverter(object):
             index += l
         return texts
 
-    def decode_beamsearch(self, mat, beamWidth=5):
+    def decode_beamsearch(self, mat, beam_width=5):
         texts = []
 
         for i in range(mat.shape[0]):
-            t = ctcBeamSearch(mat[i], self.character, self.ignore_idx, None, beamWidth=beamWidth)
+            t = ctcBeamSearch(mat[i], self.character, self.ignore_idx, None, beam_width=beam_width)
             texts.append(t)
         return texts
 
-    def decode_wordbeamsearch(self, mat, beamWidth=5):
+    def decode_wordbeamsearch(self, mat, beam_width=5):
         texts = []
         argmax = np.argmax(mat, axis=2)
         for i in range(mat.shape[0]):
@@ -319,7 +319,7 @@ class CTCLabelConverter(object):
                     dict_list = []
                 else:
                     dict_list = self.dict_list[word[0]]
-                t = ctcBeamSearch(matrix, self.character, self.ignore_idx, None, beamWidth=beamWidth, dict_list=dict_list)
+                t = ctcBeamSearch(matrix, self.character, self.ignore_idx, None, beam_width=beam_width, dict_list=dict_list)
                 string += t
             texts.append(string)
         return texts
