@@ -20,6 +20,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def count_parameters(model):
+    """count_parameters(model) :
+    count the number of trainable parameters in the model "model".
+
+    Parameters
+    ----------
+    model : PyTorch model
+        model analysed.
+
+    Returns
+    -------
+    total_param : int
+        total number of trainable parameters in the model "model".
+    """
     print("Modules, Parameters")
     total_params = 0
     for name, parameter in model.named_parameters():
@@ -261,6 +274,8 @@ def train(opt, show_number=2, amp=False):
                         infer_time,
                         length_of_data,
                     ) = validation(model, criterion, valid_loader, converter, opt, device)
+                del infer_time  # deleting unused variable
+                del length_of_data  # deleting unused variable
                 model.train()
 
                 # training loss and validation loss
@@ -292,16 +307,16 @@ def train(opt, show_number=2, amp=False):
                 # show_number = min(show_number, len(labels))
 
                 start = random.randint(0, len(labels) - show_number)
-                for gt, pred, confidence in zip(
+                for g_t, pred, confidence in zip(
                     labels[start : start + show_number],
                     preds[start : start + show_number],
                     confidence_score[start : start + show_number],
                 ):
                     if "Attn" in opt.Prediction:
-                        gt = gt[: gt.find("[s]")]
+                        g_t = g_t[: g_t.find("[s]")]
                         pred = pred[: pred.find("[s]")]
 
-                    predicted_result_log += f"{gt:25s} | {pred:25s} | {confidence:0.4f}\t{str(pred == gt)}\n"
+                    predicted_result_log += f"{g_t:25s} | {pred:25s} | {confidence:0.4f}\t{str(pred == g_t)}\n"
                 predicted_result_log += f"{dashed_line}"
                 print(predicted_result_log)
                 log.write(predicted_result_log + "\n")
