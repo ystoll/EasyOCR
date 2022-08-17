@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.init as init
 import torch.optim as optim
 import torch.utils.data
-from dataset import AlignCollate, Batch_Balanced_Dataset, hierarchical_dataset
+from dataset import AlignCollate, BatchBalancedDataset, hierarchical_dataset
 from model import Model
 from torch.cuda.amp import GradScaler, autocast
 from utils import AttnLabelConverter, Averager, CTCLabelConverter
@@ -54,7 +54,7 @@ def train(opt, show_number=2, amp=False, verbose=False):
 
     opt.select_data = opt.select_data.split("-")
     opt.batch_ratio = opt.batch_ratio.split("-")
-    train_dataset = Batch_Balanced_Dataset(opt)
+    train_dataset = BatchBalancedDataset(opt)
 
     log = open(f"./saved_models/{opt.experiment_name}/log_dataset.txt", "a", encoding="utf8")
     align_collate_valid = AlignCollate(
