@@ -10,7 +10,7 @@ import cv2
 from skimage import io
 
 
-def loadImage(img_file):
+def load_image(img_file):
     img = io.imread(img_file)  # RGB order
     if img.shape[0] == 2:
         img = img[0]

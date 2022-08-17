@@ -10,7 +10,7 @@ from scipy import ndimage
 import hashlib
 import sys, os
 from zipfile import ZipFile
-from .imgproc import loadImage
+from .imgproc import load_image
 
 if sys.version_info[0] == 2:
     from six.moves.urllib.request import urlretrieve
@@ -735,7 +735,7 @@ def reformat_input(image):
         else:
             img_cv_grey = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
             image = os.path.expanduser(image)
-        img = loadImage(image)  # can accept URL
+        img = load_image(image)  # can accept URL
     elif type(image) == bytes:
         nparr = np.frombuffer(image, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
