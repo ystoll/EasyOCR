@@ -220,11 +220,11 @@ class ResizeNormalize(object):
 
 
 class NormalizePAD(object):
-    def __init__(self, max_size, PAD_type="right"):
+    def __init__(self, max_size, pad_type="right"):
         self.toTensor = transforms.ToTensor()
         self.max_size = max_size
         self.max_width_half = math.floor(max_size[2] / 2)
-        self.PAD_type = PAD_type
+        self.pad_type = pad_type
 
     def __call__(self, img):
         img = self.toTensor(img)

@@ -1,18 +1,20 @@
-from PIL import Image
-import torch
-import torch.backends.cudnn as cudnn
-import torch.utils.data
-import torch.nn.functional as F
-import torchvision.transforms as transforms
-import numpy as np
-from collections import OrderedDict
 import importlib
-from .utils import CTCLabelConverter
 import math
+from collections import OrderedDict
+
+import numpy as np
+import torch
+# import torch.backends.cudnn as cudnn
+import torch.nn.functional as F
+import torch.utils.data
+import torchvision.transforms as transforms
+from PIL import Image
+
+from .utils import CTCLabelConverter
 
 
-def custom_mean(x):
-    return x.prod() ** (2.0 / np.sqrt(len(x)))
+def custom_mean(prob):
+    return prob.prod() ** (2.0 / np.sqrt(len(prob)))
 
 
 def contrast_grey(img):
@@ -32,20 +34,20 @@ def adjust_contrast_grey(img, target=0.4):
 
 
 class NormalizePAD(object):
-    def __init__(self, max_size, PAD_type="right"):
+    def __init__(self, max_size, pad_type="right"):
         self.toTensor = transforms.ToTensor()
         self.max_size = max_size
         self.max_width_half = math.floor(max_size[2] / 2)
-        self.PAD_type = PAD_type
+        self.pad_type = pad_type
 
     def __call__(self, img):
         img = self.toTensor(img)
         img.sub_(0.5).div_(0.5)
-        c, h, w = img.size()
+        c_num, h_img, w_img = img.size()
         Pad_img = torch.FloatTensor(*self.max_size).fill_(0)
-        Pad_img[:, :, :w] = img  # right pad
-        if self.max_size[2] != w:  # add border Pad
-            Pad_img[:, :, w:] = img[:, :, w - 1].unsqueeze(2).expand(c, h, self.max_size[2] - w)
+        Pad_img[:, :, :w_img] = img  # right pad
+        if self.max_size[2] != w_img:  # add border Pad
+            Pad_img[:, :, w_img:] = img[:, :, w_img - 1].unsqueeze(2).expand(c_num, h_img, self.max_size[2] - w_img)
 
         return Pad_img
 
@@ -80,14 +82,14 @@ class AlignCollate(object):
 
         resized_images = []
         for image in images:
-            w, h = image.size
+            w_img, h_img = image.size
             #### augmentation here - change contrast
             if self.adjust_contrast > 0:
                 image = np.array(image.convert("L"))
                 image = adjust_contrast_grey(image, target=self.adjust_contrast)
                 image = Image.fromarray(image, "L")
 
-            ratio = w / float(h)
+            ratio = w_img / float(h_img)
             if math.ceil(self.imgH * ratio) > self.imgW:
                 resized_w = self.imgW
             else:
@@ -103,6 +105,7 @@ class AlignCollate(object):
 def recognizer_predict(
     model, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder="greedy", beam_width=5, device="cpu"
 ):
+    del char_group_idx  # deleting for now unused variable char_group_idx.
     model.eval()
     result = []
     with torch.no_grad():
@@ -142,8 +145,8 @@ def recognizer_predict(
             values = preds_prob.max(axis=2)
             indices = preds_prob.argmax(axis=2)
             preds_max_prob = []
-            for v, i in zip(values, indices):
-                max_probs = v[i != 0]
+            for curr_val, i in zip(values, indices):
+                max_probs = curr_val[i != 0]
                 if len(max_probs) > 0:
                     preds_max_prob.append(max_probs)
                 else:
@@ -205,6 +208,7 @@ def get_text(
     workers=1,
     device="cpu",
 ):
+    del filter_ths  # deleting for now unused variable filter_ths.
     batch_max_length = int(imgW / 10)
 
     char_group_idx = {}
@@ -217,10 +221,10 @@ def get_text(
 
     coord = [item[0] for item in image_list]
     img_list = [item[1] for item in image_list]
-    AlignCollate_normal = AlignCollate(imgH=imgH, imgW=imgW, keep_ratio_with_pad=True)
+    align_collate_normal = AlignCollate(imgH=imgH, imgW=imgW, keep_ratio_with_pad=True)
     test_data = ListDataset(img_list)
     test_loader = torch.utils.data.DataLoader(
-        test_data, batch_size=batch_size, shuffle=False, num_workers=int(workers), collate_fn=AlignCollate_normal, pin_memory=True
+        test_data, batch_size=batch_size, shuffle=False, num_workers=int(workers), collate_fn=align_collate_normal, pin_memory=True
     )
 
     # predict first round
@@ -229,17 +233,17 @@ def get_text(
     )
 
     # predict second round
-    low_confident_idx = [i for i, item in enumerate(result1) if (item[1] < contrast_ths)]
+    low_confident_idx = [i for i, item in enumerate(result1) if item[1] < contrast_ths]
     if len(low_confident_idx) > 0:
         img_list2 = [img_list[i] for i in low_confident_idx]
-        AlignCollate_contrast = AlignCollate(imgH=imgH, imgW=imgW, keep_ratio_with_pad=True, adjust_contrast=adjust_contrast)
+        align_collate_contrast = AlignCollate(imgH=imgH, imgW=imgW, keep_ratio_with_pad=True, adjust_contrast=adjust_contrast)
         test_data = ListDataset(img_list2)
         test_loader = torch.utils.data.DataLoader(
             test_data,
             batch_size=batch_size,
             shuffle=False,
             num_workers=int(workers),
-            collate_fn=AlignCollate_contrast,
+            collate_fn=align_collate_contrast,
             pin_memory=True,
         )
         result2 = recognizer_predict(
