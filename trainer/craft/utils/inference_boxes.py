@@ -332,9 +332,9 @@ def test_net(
 
     # render results (optional)
     score_text = score_text.copy()
-    render_score_text = imgproc.cvt2HeatmapImg(score_text)
-    render_score_link = imgproc.cvt2HeatmapImg(score_link)
+    render_score_text = imgproc.cvt2_heatmap_img(score_text)
+    render_score_link = imgproc.cvt2_heatmap_img(score_link)
     render_img = [render_score_text, render_score_link]
-    # ret_score_text = imgproc.cvt2HeatmapImg(render_img)
+    # ret_score_text = imgproc.cvt2_heatmap_img(render_img)
 
     return boxes, polys, render_img

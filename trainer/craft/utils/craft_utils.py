@@ -299,11 +299,11 @@ def save_outputs(
         for box in boxes:
             cv2.polylines(image, [np.reshape(box, (-1, 1, 2))], True, (0, 0, 255))
 
-    target_gaussian_heatmap_color = imgproc.cvt2HeatmapImg(region_scores)
-    target_gaussian_affinity_heatmap_color = imgproc.cvt2HeatmapImg(affinity_scores)
+    target_gaussian_heatmap_color = imgproc.cvt2_heatmap_img(region_scores)
+    target_gaussian_affinity_heatmap_color = imgproc.cvt2_heatmap_img(affinity_scores)
 
     if confidence_mask is not None:
-        confidence_mask_gray = imgproc.cvt2HeatmapImg(confidence_mask)
+        confidence_mask_gray = imgproc.cvt2_heatmap_img(confidence_mask)
         gt_scores = np.hstack([target_gaussian_heatmap_color, target_gaussian_affinity_heatmap_color])
         confidence_mask_gray = np.hstack([np.zeros_like(confidence_mask_gray), confidence_mask_gray])
         output = np.concatenate([gt_scores, confidence_mask_gray], axis=0)

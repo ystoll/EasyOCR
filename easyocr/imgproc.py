@@ -71,7 +71,7 @@ def resize_aspect_ratio(img, square_size, interpolation, mag_ratio=1):
     return resized, ratio, size_heatmap
 
 
-def cvt2HeatmapImg(img):
+def cvt2_heatmap_img(img):
     img = (np.clip(img, 0, 1) * 255).astype(np.uint8)
     img = cv2.applyColorMap(img, cv2.COLORMAP_JET)
     return img
