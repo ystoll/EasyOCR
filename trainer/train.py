@@ -46,7 +46,7 @@ def count_parameters(model):
     return total_params
 
 
-def train(opt, show_number=2, amp=False):
+def train(opt, show_number=2, amp=False, verbose=False):
     """dataset preparation"""
     if not opt.data_filtering_off:
         print("Filtering the images containing characters which are not in opt.character")
@@ -132,6 +132,8 @@ def train(opt, show_number=2, amp=False):
                 elif "weight" in name:
                     init.kaiming_normal_(param)
             except Exception as err:  # for batchnorm.
+                if verbose:
+                    print(f"An error has occurred: {err}")
                 if "weight" in name:
                     param.data.fill_(1)
                 continue
@@ -158,8 +160,11 @@ def train(opt, show_number=2, amp=False):
         if opt.freeze_SequenceModeling:
             for param in model.module.SequenceModeling.parameters():
                 param.requires_grad = False
-    except:
-        pass
+    except Exception as err:
+        if verbose:
+            print(f"An error has occurred: {err}")
+        # pass statement is unnecessary.
+        # pass
 
     # filter that only require gradient decent
     filtered_parameters = []
@@ -196,8 +201,11 @@ def train(opt, show_number=2, amp=False):
         try:
             start_iter = int(opt.saved_model.split("_")[-1].split(".")[0])
             print(f"continue to train, start_iter: {start_iter}")
-        except:
-            pass
+        except Exception as err:
+            if verbose:
+                print(f"An error has occurred: {err}")
+            # pass statement is unnecessary.
+            # pass
 
     start_time = time.time()
     best_accuracy = -1
