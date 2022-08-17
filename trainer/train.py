@@ -44,7 +44,7 @@ def train(opt, show_number=2, amp=False):
     train_dataset = Batch_Balanced_Dataset(opt)
 
     log = open(f"./saved_models/{opt.experiment_name}/log_dataset.txt", "a", encoding="utf8")
-    AlignCollate_valid = AlignCollate(
+    align_collate_valid = AlignCollate(
         imgH=opt.imgH, imgW=opt.imgW, keep_ratio_with_pad=opt.PAD, contrast_adjust=opt.contrast_adjust
     )
     valid_dataset, valid_dataset_log = hierarchical_dataset(root=opt.valid_data, opt=opt)
@@ -54,7 +54,7 @@ def train(opt, show_number=2, amp=False):
         shuffle=True,  # 'True' to check training progress with validation function.
         num_workers=int(opt.workers),
         prefetch_factor=512,
-        collate_fn=AlignCollate_valid,
+        collate_fn=align_collate_valid,
         pin_memory=True,
     )
     log.write(valid_dataset_log)
@@ -118,7 +118,7 @@ def train(opt, show_number=2, amp=False):
                     init.constant_(param, 0.0)
                 elif "weight" in name:
                     init.kaiming_normal_(param)
-            except Exception as e:  # for batchnorm.
+            except Exception as err:  # for batchnorm.
                 if "weight" in name:
                     param.data.fill_(1)
                 continue
@@ -151,11 +151,11 @@ def train(opt, show_number=2, amp=False):
     # filter that only require gradient decent
     filtered_parameters = []
     params_num = []
-    for p in filter(lambda p: p.requires_grad, model.parameters()):
-        filtered_parameters.append(p)
-        params_num.append(np.prod(p.size()))
+    for param in filter(lambda param: param.requires_grad, model.parameters()):
+        filtered_parameters.append(param)
+        params_num.append(np.prod(param.size()))
     print("Trainable params num : ", sum(params_num))
-    # [print(name, p.numel()) for name, p in filter(lambda p: p[1].requires_grad, model.named_parameters())]
+    # [print(name, param.numel()) for name, param in filter(lambda param: param[1].requires_grad, model.named_parameters())]
 
     # setup optimizer
     if opt.optim == "adam":
@@ -171,8 +171,8 @@ def train(opt, show_number=2, amp=False):
     with open(f"./saved_models/{opt.experiment_name}/opt.txt", "a", encoding="utf8") as opt_file:
         opt_log = "------------ Options -------------\n"
         args = vars(opt)
-        for k, v in args.items():
-            opt_log += f"{str(k)}: {str(v)}\n"
+        for cli_key, user_val in args.items():
+            opt_log += f"{str(cli_key)}: {str(user_val)}\n"
         opt_log += "---------------------------------------\n"
         print(opt_log)
         opt_file.write(opt_log)
@@ -188,11 +188,11 @@ def train(opt, show_number=2, amp=False):
 
     start_time = time.time()
     best_accuracy = -1
-    best_norm_ED = -1
+    best_norm_ed = -1
     i = start_iter
 
     scaler = GradScaler()
-    t1 = time.time()
+    t_1 = time.time()
 
     while True:
         # train part
@@ -244,8 +244,8 @@ def train(opt, show_number=2, amp=False):
 
         # validation part
         if (i % opt.valInterval == 0) and (i != 0):
-            print("training time: ", time.time() - t1)
-            t1 = time.time()
+            print("training time: ", time.time() - t_1)
+            t_1 = time.time()
             elapsed_time = time.time() - start_time
             # for log
             with open(f"./saved_models/{opt.experiment_name}/log_train.txt", "a", encoding="utf8") as log:
@@ -254,7 +254,7 @@ def train(opt, show_number=2, amp=False):
                     (
                         valid_loss,
                         current_accuracy,
-                        current_norm_ED,
+                        current_norm_ed,
                         preds,
                         confidence_score,
                         labels,
@@ -268,17 +268,17 @@ def train(opt, show_number=2, amp=False):
                 loss_avg.reset()
 
                 current_model_log = (
-                    f'{"Current_accuracy":17s}: {current_accuracy:0.3f}, {"Current_norm_ED":17s}: {current_norm_ED:0.4f}'
+                    f'{"Current_accuracy":17s}: {current_accuracy:0.3f}, {"Current_norm_ED":17s}: {current_norm_ed:0.4f}'
                 )
 
                 # keep best accuracy model (on valid dataset)
                 if current_accuracy > best_accuracy:
                     best_accuracy = current_accuracy
                     torch.save(model.state_dict(), f"./saved_models/{opt.experiment_name}/best_accuracy.pth")
-                if current_norm_ED > best_norm_ED:
-                    best_norm_ED = current_norm_ED
-                    torch.save(model.state_dict(), f"./saved_models/{opt.experiment_name}/best_norm_ED.pth")
-                best_model_log = f'{"Best_accuracy":17s}: {best_accuracy:0.3f}, {"Best_norm_ED":17s}: {best_norm_ED:0.4f}'
+                if current_norm_ed > best_norm_ed:
+                    best_norm_ed = current_norm_ed
+                    torch.save(model.state_dict(), f"./saved_models/{opt.experiment_name}/best_norm_ed.pth")
+                best_model_log = f'{"Best_accuracy":17s}: {best_accuracy:0.3f}, {"Best_norm_ED":17s}: {best_norm_ed:0.4f}'
 
                 loss_model_log = f"{loss_log}\n{current_model_log}\n{best_model_log}"
                 print(loss_model_log)
@@ -305,8 +305,8 @@ def train(opt, show_number=2, amp=False):
                 predicted_result_log += f"{dashed_line}"
                 print(predicted_result_log)
                 log.write(predicted_result_log + "\n")
-                print("validation time: ", time.time() - t1)
-                t1 = time.time()
+                print("validation time: ", time.time() - t_1)
+                t_1 = time.time()
         # save model per 1e+4 iter.
         if (i + 1) % 1e4 == 0:
             torch.save(model.state_dict(), f"./saved_models/{opt.experiment_name}/iter_{i+1}.pth")
