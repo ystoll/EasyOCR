@@ -18,7 +18,7 @@ from loss.mseloss import Maploss_v2, Maploss_v3
 from model.craft import CRAFT
 from metrics.eval_det_iou import DetectionIoUEvaluator
 from eval import main_eval
-from utils.util import copyStateDict, save_parser
+from utils.util import copy_state_dict, save_parser
 
 
 class Trainer(object):
@@ -123,7 +123,7 @@ class Trainer(object):
             raise Exception("Undefined architecture")
 
         if self.config.train.ckpt_path is not None:
-            craft.load_state_dict(copyStateDict(self.net_param["craft"]))
+            craft.load_state_dict(copy_state_dict(self.net_param["craft"]))
         craft = nn.SyncBatchNorm.convert_sync_batchnorm(craft)
         craft = craft.cuda()
         craft = torch.nn.parallel.DistributedDataParallel(craft, device_ids=[self.gpu])
@@ -139,7 +139,7 @@ class Trainer(object):
         )
 
         if self.config.train.ckpt_path is not None and self.config.train.st_iter != 0:
-            optimizer.load_state_dict(copyStateDict(self.net_param["optimizer"]))
+            optimizer.load_state_dict(copy_state_dict(self.net_param["optimizer"]))
             self.config.train.st_iter = self.net_param["optimizer"]["state"][0]["step"]
             self.config.train.lr = self.net_param["optimizer"]["param_groups"][0]["lr"]
 
@@ -150,7 +150,7 @@ class Trainer(object):
 
             # load model
             if self.config.train.ckpt_path is not None and self.config.train.st_iter != 0:
-                scaler.load_state_dict(copyStateDict(self.net_param["scaler"]))
+                scaler.load_state_dict(copy_state_dict(self.net_param["scaler"]))
         else:
             scaler = None
 

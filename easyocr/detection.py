@@ -12,8 +12,8 @@ from .craft_utils import adjustResultCoordinates, getDetBoxes
 from .imgproc import normalizeMeanVariance, resize_aspect_ratio
 
 
-def copyStateDict(state_dict):
-    """copyStateDict _summary_
+def copy_state_dict(state_dict):
+    """copy_state_dict _summary_
 
     Parameters
     ----------
@@ -145,14 +145,14 @@ def get_detector(trained_model, device="cpu", quantize=True, cudnn_benchmark=Fal
     net = CRAFT()
 
     if device == "cpu":
-        net.load_state_dict(copyStateDict(torch.load(trained_model, map_location=device)))
+        net.load_state_dict(copy_state_dict(torch.load(trained_model, map_location=device)))
         if quantize:
             try:
                 torch.quantization.quantize_dynamic(net, dtype=torch.qint8, inplace=True)
             except:
                 pass
     else:
-        net.load_state_dict(copyStateDict(torch.load(trained_model, map_location=device)))
+        net.load_state_dict(copy_state_dict(torch.load(trained_model, map_location=device)))
         net = torch.nn.DataParallel(net).to(device)
         cudnn.benchmark = cudnn_benchmark
 

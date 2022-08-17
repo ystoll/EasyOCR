@@ -19,7 +19,7 @@ from utils.inference_boxes import (
     load_icdar2013_gt,
     load_synthtext_gt,
 )
-from utils.util import copyStateDict
+from utils.util import copy_state_dict
 
 
 def save_result_synth(img_file, img, pre_output, pre_box, gt_box=None, result_dir=""):
@@ -228,7 +228,7 @@ def main_eval(model_path, backbone, config, evaluator, result_dir, buffer, model
 
         print("Loading weights from checkpoint (" + model_path + ")")
         net_param = torch.load(model_path, map_location=f"cuda:{gpu_idx}")
-        model.load_state_dict(copyStateDict(net_param["craft"]))
+        model.load_state_dict(copy_state_dict(net_param["craft"]))
 
         if config.cuda:
             model = model.cuda()

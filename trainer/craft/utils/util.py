@@ -8,7 +8,7 @@ from data import imgproc
 from utils import craft_utils
 
 
-def copyStateDict(state_dict):
+def copy_state_dict(state_dict):
     if list(state_dict.keys())[0].startswith("module"):
         start_idx = 1
     else:

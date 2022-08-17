@@ -18,7 +18,7 @@ from loss.mseloss import Maploss_v2, Maploss_v3
 from model.craft import CRAFT
 from eval import main_eval
 from metrics.eval_det_iou import DetectionIoUEvaluator
-from utils.util import copyStateDict, save_parser
+from utils.util import copy_state_dict, save_parser
 
 
 class Trainer(object):
@@ -146,7 +146,7 @@ class Trainer(object):
             supervision_device = self.gpu
             if self.config.train.ckpt_path is not None:
                 supervision_param = self.get_load_param(supervision_device)
-                supervision_model.load_state_dict(copyStateDict(supervision_param["craft"]))
+                supervision_model.load_state_dict(copy_state_dict(supervision_param["craft"]))
                 supervision_model = supervision_model.to(f"cuda:{supervision_device}")
             print(f"Supervision model loading on : gpu {supervision_device}")
         else:
@@ -159,7 +159,7 @@ class Trainer(object):
             raise Exception("Undefined architecture")
 
         if self.config.train.ckpt_path is not None:
-            craft.load_state_dict(copyStateDict(self.net_param["craft"]))
+            craft.load_state_dict(copy_state_dict(self.net_param["craft"]))
 
         craft = craft.cuda()
         craft = torch.nn.DataParallel(craft)
@@ -198,7 +198,7 @@ class Trainer(object):
         )
 
         if self.config.train.ckpt_path is not None and self.config.train.st_iter != 0:
-            optimizer.load_state_dict(copyStateDict(self.net_param["optimizer"]))
+            optimizer.load_state_dict(copy_state_dict(self.net_param["optimizer"]))
             self.config.train.st_iter = self.net_param["optimizer"]["state"][0]["step"]
             self.config.train.lr = self.net_param["optimizer"]["param_groups"][0]["lr"]
 
@@ -208,7 +208,7 @@ class Trainer(object):
             scaler = torch.cuda.amp.GradScaler()
 
             if self.config.train.ckpt_path is not None and self.config.train.st_iter != 0:
-                scaler.load_state_dict(copyStateDict(self.net_param["scaler"]))
+                scaler.load_state_dict(copy_state_dict(self.net_param["scaler"]))
         else:
             scaler = None
 
