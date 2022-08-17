@@ -80,7 +80,7 @@ class PseudoCharBoxBuilder:
 
         with torch.no_grad():
             word_img_torch = torch.from_numpy(
-                imgproc.normalizeMeanVariance(
+                imgproc.normalize_mean_variance(
                     word_image,
                     mean=(0.485, 0.456, 0.406),
                     variance=(0.229, 0.224, 0.225),

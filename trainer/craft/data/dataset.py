@@ -182,7 +182,7 @@ class CraftBaseDataset(Dataset):
         affinity_score = self.resize_to_half(affinity_score, interpolation=cv2.INTER_CUBIC)
         confidence_mask = self.resize_to_half(confidence_mask, interpolation=cv2.INTER_NEAREST)
 
-        image = imgproc.normalizeMeanVariance(np.array(image), mean=self.mean, variance=self.variance)
+        image = imgproc.normalize_mean_variance(np.array(image), mean=self.mean, variance=self.variance)
         image = image.transpose(2, 0, 1)
 
         return image, region_score, affinity_score, confidence_mask

@@ -302,7 +302,7 @@ def test_net(
     ratio_h = ratio_w = 1 / target_ratio
 
     # preprocessing
-    x = imgproc.normalizeMeanVariance(img_resized)
+    x = imgproc.normalize_mean_variance(img_resized)
     x = torch.from_numpy(x).permute(2, 0, 1)  # [h, w, c] to [c, h, w]
     x = Variable(x.unsqueeze(0))  # [c, h, w] to [b, c, h, w]
     if cuda:

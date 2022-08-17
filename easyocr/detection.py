@@ -9,7 +9,7 @@ import torch.backends.cudnn as cudnn
 
 from .craft import CRAFT
 from .craft_utils import adjustResultCoordinates, getDetBoxes
-from .imgproc import normalizeMeanVariance, resize_aspect_ratio
+from .imgproc import normalize_mean_variance, resize_aspect_ratio
 
 
 def copy_state_dict(state_dict):
@@ -84,7 +84,7 @@ def test_net(
         img_resized_list.append(img_resized)
     ratio_h = ratio_w = 1 / target_ratio
     # preprocessing
-    curr_norm_img = [np.transpose(normalizeMeanVariance(n_img), (2, 0, 1)) for n_img in img_resized_list]
+    curr_norm_img = [np.transpose(normalize_mean_variance(n_img), (2, 0, 1)) for n_img in img_resized_list]
     curr_norm_img = torch.from_numpy(np.array(curr_norm_img))
     curr_norm_img = curr_norm_img.to(device)
 
