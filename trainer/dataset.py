@@ -1,12 +1,12 @@
 import os
-import sys
+# import sys
 import re
-import six
+# import six
 import math
 import torch
 import pandas as pd
 
-from natsort import natsorted
+# from natsort import natsorted
 from PIL import Image
 import numpy as np
 from torch.utils.data import Dataset, ConcatDataset, Subset
@@ -30,7 +30,7 @@ def adjust_contrast_grey(img, target=0.4):
     return img
 
 
-class Batch_Balanced_Dataset(object):
+class BatchBalancedDataset(object):
     def __init__(self, opt):
         """
         Modulate the data ratio in the batch.
@@ -45,13 +45,13 @@ class Batch_Balanced_Dataset(object):
         log.write(f"dataset_root: {opt.train_data}\nopt.select_data: {opt.select_data}\nopt.batch_ratio: {opt.batch_ratio}\n")
         assert len(opt.select_data) == len(opt.batch_ratio)
 
-        _AlignCollate = AlignCollate(
+        _align_collate = AlignCollate(
             imgH=opt.imgH, imgW=opt.imgW, keep_ratio_with_pad=opt.PAD, contrast_adjust=opt.contrast_adjust
         )
         self.data_loader_list = []
         self.dataloader_iter_list = []
         batch_size_list = []
-        Total_batch_size = 0
+        total_batch_size = 0
         for selected_d, batch_ratio_d in zip(opt.select_data, opt.batch_ratio):
             _batch_size = max(round(opt.batch_size * float(batch_ratio_d)), 1)
             print(dashed_line)
@@ -60,11 +60,11 @@ class Batch_Balanced_Dataset(object):
             total_number_dataset = len(_dataset)
             log.write(_dataset_log)
 
-            """
-            The total number of data can be modified with opt.total_data_usage_ratio.
-            ex) opt.total_data_usage_ratio = 1 indicates 100% usage, and 0.2 indicates 20% usage.
-            See 4.2 section in our paper.
-            """
+            # """
+            # The total number of data can be modified with opt.total_data_usage_ratio.
+            # ex) opt.total_data_usage_ratio = 1 indicates 100% usage, and 0.2 indicates 20% usage.
+            # See 4.2 section in our paper.
+            # """
             number_dataset = int(total_number_dataset * float(opt.total_data_usage_ratio))
             dataset_split = [number_dataset, total_number_dataset - number_dataset]
             indices = range(total_number_dataset)
@@ -79,27 +79,27 @@ class Batch_Balanced_Dataset(object):
             print(selected_d_log)
             log.write(selected_d_log + "\n")
             batch_size_list.append(str(_batch_size))
-            Total_batch_size += _batch_size
+            total_batch_size += _batch_size
 
             _data_loader = torch.utils.data.DataLoader(
                 _dataset,
                 batch_size=_batch_size,
                 shuffle=True,
                 num_workers=int(opt.workers),  # prefetch_factor=2,persistent_workers=True,
-                collate_fn=_AlignCollate,
+                collate_fn=_align_collate,
                 pin_memory=True,
             )
             self.data_loader_list.append(_data_loader)
             self.dataloader_iter_list.append(iter(_data_loader))
 
-        Total_batch_size_log = f"{dashed_line}\n"
+        total_batch_size_log = f"{dashed_line}\n"
         batch_size_sum = "+".join(batch_size_list)
-        Total_batch_size_log += f"Total_batch_size: {batch_size_sum} = {Total_batch_size}\n"
-        Total_batch_size_log += f"{dashed_line}"
-        opt.batch_size = Total_batch_size
+        total_batch_size_log += f"total_batch_size: {batch_size_sum} = {total_batch_size}\n"
+        total_batch_size_log += f"{dashed_line}"
+        opt.batch_size = total_batch_size
 
-        print(Total_batch_size_log)
-        log.write(Total_batch_size_log + "\n")
+        print(total_batch_size_log)
+        log.write(total_batch_size_log + "\n")
         log.close()
 
     def get_batch(self):
@@ -130,7 +130,7 @@ def hierarchical_dataset(root, opt, select_data="/"):
     dataset_log = f"dataset_root:    {root}\t dataset: {select_data[0]}"
     print(dataset_log)
     dataset_log += "\n"
-    for dirpath, dirnames, filenames in os.walk(root + "/"):
+    for dirpath, dirnames, _ in os.walk(root + "/"):
         if not dirnames:
             select_flag = False
             for selected_d in select_data:
@@ -156,21 +156,21 @@ class OCRDataset(Dataset):
         self.root = root
         self.opt = opt
         print(root)
-        self.df = pd.read_csv(
+        self.df_labels = pd.read_csv(
             os.path.join(root, "labels.csv"),
             sep="^([^,]+),",
             engine="python",
             usecols=["filename", "words"],
             keep_default_na=False,
         )
-        self.nSamples = len(self.df)
+        self.n_samples = len(self.df_labels)
 
         if self.opt.data_filtering_off:
-            self.filtered_index_list = [index + 1 for index in range(self.nSamples)]
+            self.filtered_index_list = [index + 1 for index in range(self.n_samples)]
         else:
             self.filtered_index_list = []
-            for index in range(self.nSamples):
-                label = self.df.at[index, "words"]
+            for index in range(self.n_samples):
+                label = self.df_labels.at[index, "words"]
                 try:
                     if len(label) > self.opt.batch_max_length:
                         continue
@@ -180,16 +180,16 @@ class OCRDataset(Dataset):
                 if re.search(out_of_char, label.lower()):
                     continue
                 self.filtered_index_list.append(index)
-            self.nSamples = len(self.filtered_index_list)
+            self.n_samples = len(self.filtered_index_list)
 
     def __len__(self):
-        return self.nSamples
+        return self.n_samples
 
     def __getitem__(self, index):
         index = self.filtered_index_list[index]
-        img_fname = self.df.at[index, "filename"]
+        img_fname = self.df_labels.at[index, "filename"]
         img_fpath = os.path.join(self.root, img_fname)
-        label = self.df.at[index, "words"]
+        label = self.df_labels.at[index, "words"]
 
         if self.opt.rgb:
             img = Image.open(img_fpath).convert("RGB")  # for color image
@@ -210,32 +210,32 @@ class ResizeNormalize(object):
     def __init__(self, size, interpolation=Image.BICUBIC):
         self.size = size
         self.interpolation = interpolation
-        self.toTensor = transforms.ToTensor()
+        self.to_tensor = transforms.ToTensor()
 
     def __call__(self, img):
         img = img.resize(self.size, self.interpolation)
-        img = self.toTensor(img)
+        img = self.to_tensor(img)
         img.sub_(0.5).div_(0.5)
         return img
 
 
 class NormalizePAD(object):
     def __init__(self, max_size, pad_type="right"):
-        self.toTensor = transforms.ToTensor()
+        self.to_tensor = transforms.ToTensor()
         self.max_size = max_size
         self.max_width_half = math.floor(max_size[2] / 2)
         self.pad_type = pad_type
 
     def __call__(self, img):
-        img = self.toTensor(img)
+        img = self.to_tensor(img)
         img.sub_(0.5).div_(0.5)
-        c, h, w = img.size()
-        Pad_img = torch.FloatTensor(*self.max_size).fill_(0)
-        Pad_img[:, :, :w] = img  # right pad
-        if self.max_size[2] != w:  # add border Pad
-            Pad_img[:, :, w:] = img[:, :, w - 1].unsqueeze(2).expand(c, h, self.max_size[2] - w)
+        c_num, h_img, w_img = img.size()
+        pad_img = torch.FloatTensor(*self.max_size).fill_(0)
+        pad_img[:, :, :w_img] = img  # right pad
+        if self.max_size[2] != w_img:  # add border Pad
+            pad_img[:, :, w_img:] = img[:, :, w_img - 1].unsqueeze(2).expand(c_num, h_img, self.max_size[2] - w_img)
 
-        return Pad_img
+        return pad_img
 
 
 class AlignCollate(object):
@@ -256,7 +256,7 @@ class AlignCollate(object):
 
             resized_images = []
             for image in images:
-                w, h = image.size
+                w_img, h_img = image.size
 
                 #### augmentation here - change contrast
                 if self.contrast_adjust > 0:
@@ -264,7 +264,7 @@ class AlignCollate(object):
                     image = adjust_contrast_grey(image, target=self.contrast_adjust)
                     image = Image.fromarray(image, "L")
 
-                ratio = w / float(h)
+                ratio = w_img / float(h_img)
                 if math.ceil(self.imgH * ratio) > self.imgW:
                     resized_w = self.imgW
                 else:

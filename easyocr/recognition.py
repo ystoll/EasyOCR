@@ -35,30 +35,30 @@ def adjust_contrast_grey(img, target=0.4):
 
 class NormalizePAD(object):
     def __init__(self, max_size, pad_type="right"):
-        self.toTensor = transforms.ToTensor()
+        self.to_tensor = transforms.ToTensor()
         self.max_size = max_size
         self.max_width_half = math.floor(max_size[2] / 2)
         self.pad_type = pad_type
 
     def __call__(self, img):
-        img = self.toTensor(img)
+        img = self.to_tensor(img)
         img.sub_(0.5).div_(0.5)
         c_num, h_img, w_img = img.size()
-        Pad_img = torch.FloatTensor(*self.max_size).fill_(0)
-        Pad_img[:, :, :w_img] = img  # right pad
+        pad_img = torch.FloatTensor(*self.max_size).fill_(0)
+        pad_img[:, :, :w_img] = img  # right pad
         if self.max_size[2] != w_img:  # add border Pad
-            Pad_img[:, :, w_img:] = img[:, :, w_img - 1].unsqueeze(2).expand(c_num, h_img, self.max_size[2] - w_img)
+            pad_img[:, :, w_img:] = img[:, :, w_img - 1].unsqueeze(2).expand(c_num, h_img, self.max_size[2] - w_img)
 
-        return Pad_img
+        return pad_img
 
 
 class ListDataset(torch.utils.data.Dataset):
     def __init__(self, image_list):
         self.image_list = image_list
-        self.nSamples = len(image_list)
+        self.n_samples = len(image_list)
 
     def __len__(self):
-        return self.nSamples
+        return self.n_samples
 
     def __getitem__(self, index):
         img = self.image_list[index]
@@ -113,7 +113,8 @@ def recognizer_predict(
             batch_size = image_tensors.size(0)
             image = image_tensors.to(device)
             # For max length prediction
-            length_for_pred = torch.IntTensor([batch_max_length] * batch_size).to(device)
+            # length_for_pred seems unused, commenting for now.
+            # length_for_pred = torch.IntTensor([batch_max_length] * batch_size).to(device)
             text_for_pred = torch.LongTensor(batch_size, batch_max_length + 1).fill_(0).to(device)
 
             preds = model(image, text_for_pred)
@@ -159,7 +160,8 @@ def recognizer_predict(
     return result
 
 
-def get_recognizer(recog_network, network_params, character, separator_list, dict_list, model_path, device="cpu", quantize=True):
+def get_recognizer(recog_network, network_params, character, separator_list,
+                   dict_list, model_path, device="cpu", quantize=True, verbose=False):
 
     converter = CTCLabelConverter(character, separator_list, dict_list)
     num_class = len(converter.character)
@@ -182,8 +184,10 @@ def get_recognizer(recog_network, network_params, character, separator_list, dic
         if quantize:
             try:
                 torch.quantization.quantize_dynamic(model, dtype=torch.qint8, inplace=True)
-            except:
-                pass
+            except Exception as err:
+                if verbose:
+                    print(f"An error has occurred: {err}")
+                # pass
     else:
         model = torch.nn.DataParallel(model).to(device)
         model.load_state_dict(torch.load(model_path, map_location=device))
@@ -207,6 +211,7 @@ def get_text(
     filter_ths=0.003,
     workers=1,
     device="cpu",
+    verbose=False
 ):
     del filter_ths  # deleting for now unused variable filter_ths.
     batch_max_length = int(imgW / 10)
@@ -216,8 +221,10 @@ def get_text(
     for char in ignore_char:
         try:
             ignore_idx.append(character.index(char) + 1)
-        except:
-            pass
+        except Exception as err:
+            if verbose:
+                print(f"An error has occurred: {err}")
+                # pass
 
     coord = [item[0] for item in image_list]
     img_list = [item[1] for item in image_list]
