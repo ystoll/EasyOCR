@@ -9,8 +9,8 @@ import easyocr
 
 def export_detector(
     detector_onnx_save_path,
-    in_shape=[1, 3, 608, 800],
-    lang_list=["en"],
+    in_shape=(1, 3, 608, 800),  # tuple (immutable) are better than list as default values.
+    lang_list=("en"),  # tuple (immutable) are better than list as default values.
     model_storage_directory=None,
     user_network_directory=None,
     download_enabled=True,
@@ -52,6 +52,7 @@ def export_detector(
     _type_
         _description_
     """
+    del recognizer  # deleting unused "recognizer" parameter.
     if dynamic is False:
         print("WARNING: it is recommended to use -d dynamic flag when exporting onnx")
     ocr_reader = easyocr.Reader(
@@ -124,17 +125,7 @@ def export_detector(
 
 
 def parse_args():
-    """parse_args _summary_
-
-    Returns
-    -------
-    _type_
-        _description_
-
-    Raises
-    ------
-    ValueError
-        _description_
+    """Arguments parser.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -162,7 +153,7 @@ def parse_args():
 
 
 def main():
-    """main _summary_
+    """main function: parse arguments and export detecton to onnx format.
     """
     args = parse_args()
     export_detector(
