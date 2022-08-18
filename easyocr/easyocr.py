@@ -769,10 +769,10 @@ class Reader(object):
         )
 
         char = []
-        directory = "characters/"
+        #directory = "characters/"
+        directory = "easyocr/character"
         for i, _ in enumerate(result):
             char.append(result[i][1])
-
 
         def search(arr, curr_char):
             match = False
@@ -785,12 +785,12 @@ class Reader(object):
 
         def tupleadd(i):
             inter_res = result[i]
-            res = inter_res + (filename[0:2],)
+            res = tuple(inter_res) + (filename[0:2],)
             return res
 
         for filename in os.listdir(directory):
             if filename.endswith(".txt"):
-                with open("characters/" + filename, "rt", encoding="utf8") as myfile:
+                with open(os.path.join(directory, filename), "rt", encoding="utf8") as myfile:
                     chartrs = str(myfile.read().splitlines()).replace("\n", "")
                     for i, _ in enumerate(char):
                         res = search(chartrs, char[i])
@@ -833,8 +833,8 @@ class Reader(object):
         """
         Parameters:
         image: file path or numpy-array or a byte stream object
-        When sending a list of images, they all must of the same size,
-        the following parameters will automatically resize if they are not None
+        When sending a list of images, they all must be of the same size,
+        the following parameters will automatically resize if they are not None:
         n_width: int, new width
         n_height: int, new height
         """
