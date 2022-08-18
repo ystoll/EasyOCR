@@ -24,7 +24,7 @@ def saveInput(imagename, vis_dir, image, region_scores, affinity_scores, confide
     image = np.uint8(image.copy())
     image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-    boxes, polys = craft_utils.getDetBoxes(region_scores, affinity_scores, 0.85, 0.2, 0.5, False)
+    boxes, polys = craft_utils.get_det_boxes(region_scores, affinity_scores, 0.85, 0.2, 0.5, False)
 
     if image.shape[0] / region_scores.shape[0] >= 2:
         boxes = np.array(boxes, np.int32) * 2

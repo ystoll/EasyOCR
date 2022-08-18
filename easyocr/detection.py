@@ -8,7 +8,7 @@ import torch.backends.cudnn as cudnn
 # from torch.autograd import Variable
 
 from .craft import CRAFT
-from .craft_utils import adjustResultCoordinates, getDetBoxes
+from .craft_utils import adjust_result_coordinates, get_det_boxes
 from .imgproc import normalize_mean_variance, resize_aspect_ratio
 
 
@@ -100,13 +100,13 @@ def test_net(
         score_link = out[:, :, 1].cpu().data.numpy()
 
         # Post-processing
-        boxes, polys, mapper = getDetBoxes(
+        boxes, polys, mapper = get_det_boxes(
             score_text, score_link, text_threshold, link_threshold, low_text, poly, estimate_num_chars
         )
 
         # coordinate adjustment
-        boxes = adjustResultCoordinates(boxes, ratio_w, ratio_h)
-        polys = adjustResultCoordinates(polys, ratio_w, ratio_h)
+        boxes = adjust_result_coordinates(boxes, ratio_w, ratio_h)
+        polys = adjust_result_coordinates(polys, ratio_w, ratio_h)
         if estimate_num_chars:
             boxes = list(boxes)
             polys = list(polys)
@@ -123,7 +123,7 @@ def test_net(
     return boxes_list, polys_list
 
 
-def get_detector(trained_model, device="cpu", quantize=True, cudnn_benchmark=False):
+def get_detector(trained_model, device="cpu", quantize=True, cudnn_benchmark=False, verbose=False):
     """get_detector _summary_
 
     Parameters
@@ -149,8 +149,10 @@ def get_detector(trained_model, device="cpu", quantize=True, cudnn_benchmark=Fal
         if quantize:
             try:
                 torch.quantization.quantize_dynamic(net, dtype=torch.qint8, inplace=True)
-            except:
-                pass
+            except Exception as err:
+                if verbose:
+                    print(f"An error has occurred: {err}")
+                    # pass
     else:
         net.load_state_dict(copy_state_dict(torch.load(trained_model, map_location=device)))
         net = torch.nn.DataParallel(net).to(device)

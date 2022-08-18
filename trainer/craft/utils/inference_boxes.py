@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 
-from utils.craft_utils import getDetBoxes, adjustResultCoordinates
+from utils.craft_utils import get_det_boxes, adjust_result_coordinates
 from data import imgproc
 from data.dataset import SynthTextDataSet
 import math
@@ -321,11 +321,11 @@ def test_net(
     score_link = score_link[: size_heatmap[0], : size_heatmap[1]]
 
     # Post-processing
-    boxes, polys = getDetBoxes(score_text, score_link, text_threshold, link_threshold, low_text, poly)
+    boxes, polys = get_det_boxes(score_text, score_link, text_threshold, link_threshold, low_text, poly)
 
     # coordinate adjustment
-    boxes = adjustResultCoordinates(boxes, ratio_w, ratio_h)
-    polys = adjustResultCoordinates(polys, ratio_w, ratio_h)
+    boxes = adjust_result_coordinates(boxes, ratio_w, ratio_h)
+    polys = adjust_result_coordinates(polys, ratio_w, ratio_h)
     for k in range(len(polys)):
         if polys[k] is None:
             polys[k] = boxes[k]
