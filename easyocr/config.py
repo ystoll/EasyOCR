@@ -1,3 +1,5 @@
+# Disabling line-too-long in pylint.
+# pylint: disable=line-too-long
 import os
 
 os.environ["LRU_CACHE_CAPACITY"] = "1"
