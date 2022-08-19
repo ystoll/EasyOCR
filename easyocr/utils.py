@@ -1,15 +1,18 @@
 from __future__ import print_function
 
-import torch
-import pickle
-import numpy as np
+import hashlib
 import math
+import os
+# import pickle
+import sys
+from zipfile import ZipFile
+
 import cv2
+import numpy as np
+import torch
 from PIL import Image, JpegImagePlugin
 from scipy import ndimage
-import hashlib
-import sys, os
-from zipfile import ZipFile
+
 from .imgproc import load_image
 
 if sys.version_info[0] == 2:
@@ -154,40 +157,40 @@ def fast_simplify_label(labeling, c, blankIdx=0):
 
     # Adding BlankIDX after Non-Blank IDX
     if labeling and c == blankIdx and labeling[-1] != blankIdx:
-        newLabeling = labeling + (c,)
+        new_labeling = labeling + (c,)
 
     # Case when a nonBlankChar is added after BlankChar |len(char) - 1
     elif labeling and c != blankIdx and labeling[-1] == blankIdx:
 
         # If Blank between same character do nothing | As done by Simplify label
         if labeling[-2] == c:
-            newLabeling = labeling + (c,)
+            new_labeling = labeling + (c,)
 
         # if blank between different character, remove it | As done by Simplify Label
         else:
-            newLabeling = labeling[:-1] + (c,)
+            new_labeling = labeling[:-1] + (c,)
 
     # if consecutive blanks : Keep the original label
     elif labeling and c == blankIdx and labeling[-1] == blankIdx:
-        newLabeling = labeling
+        new_labeling = labeling
 
     # if empty beam & first index is blank
     elif not labeling and c == blankIdx:
-        newLabeling = labeling
+        new_labeling = labeling
 
     # if empty beam & first index is non-blank
     elif not labeling and c != blankIdx:
-        newLabeling = labeling + (c,)
+        new_labeling = labeling + (c,)
 
     elif labeling and c != blankIdx:
-        newLabeling = labeling + (c,)
+        new_labeling = labeling + (c,)
 
     # Cases that might still require simplyfying
     else:
-        newLabeling = labeling + (c,)
-        newLabeling = simplify_label(newLabeling, blankIdx)
+        new_labeling = labeling + (c,)
+        new_labeling = simplify_label(new_labeling, blankIdx)
 
-    return newLabeling
+    return new_labeling
 
 
 def addBeam(beamState, labeling):
@@ -196,7 +199,9 @@ def addBeam(beamState, labeling):
         beamState.entries[labeling] = BeamEntry()
 
 
-def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
+def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=None):
+    if dict_list is None:
+        dict_list = []
     blankIdx = 0
     maxT, maxC = mat.shape
 
@@ -268,6 +273,7 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
 
                 # apply LM
                 # applyLM(curr.entries[labeling], curr.entries[newLabeling], classes, lm)
+                del lm  # deleting unused var lm
 
         # set new beam state
 
@@ -291,7 +297,7 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
 class CTCLabelConverter(object):
     """Convert between text-label and text-index"""
 
-    def __init__(self, character, separator_list={}, dict_pathlist={}):
+    def __init__(self, character, separator_list=None, dict_pathlist=None, verbose=False):
         # character (str): set of the possible characters.
         dict_character = list(character)
 
@@ -302,10 +308,16 @@ class CTCLabelConverter(object):
         self.character = ["[blank]"] + dict_character  # dummy '[blank]' token for CTCLoss (index 0)
 
         self.separator_list = separator_list
+        if self.separator_list is None:
+            self.separator_list = {}
+
         separator_char = []
         for lang, sep in separator_list.items():
             separator_char += sep
-        self.ignore_idx = [0] + [i + 1 for i, item in enumerate(separator_char)]
+        self.ignore_idx = [0] + [i + 1 for i, _ in enumerate(separator_char)]
+
+        if dict_pathlist is None:
+            dict_pathlist = {}
 
         ####### latin dict
         if len(separator_list) == 0:
@@ -315,8 +327,9 @@ class CTCLabelConverter(object):
                     with open(dict_path, "r", encoding="utf-8-sig") as input_file:
                         word_count = input_file.read().splitlines()
                     dict_list += word_count
-                except:
-                    pass
+                except Exception as err:
+                    if verbose:
+                        print(f"An error has occurred: {err}")
         else:
             dict_list = {}
             for lang, dict_path in dict_pathlist.items():
@@ -326,7 +339,7 @@ class CTCLabelConverter(object):
 
         self.dict_list = dict_list
 
-    def encode(self, text, batch_max_length=25):
+    def encode(self, text):
         """convert text-label into text-index.
         input:
             text: text labels of each image. [batch_size]
@@ -452,16 +465,16 @@ def group_text_box(polys, slope_ths=0.1, ycenter_ths=0.5, height_ths=0.5, width_
             theta13 = abs(np.arctan((poly[1] - poly[5]) / np.maximum(10, (poly[0] - poly[4]))))
             theta24 = abs(np.arctan((poly[3] - poly[7]) / np.maximum(10, (poly[2] - poly[6]))))
             # do I need to clip minimum, maximum value here?
-            x1 = poly[0] - np.cos(theta13) * margin
-            y1 = poly[1] - np.sin(theta13) * margin
-            x2 = poly[2] + np.cos(theta24) * margin
-            y2 = poly[3] - np.sin(theta24) * margin
-            x3 = poly[4] + np.cos(theta13) * margin
-            y3 = poly[5] + np.sin(theta13) * margin
-            x4 = poly[6] - np.cos(theta24) * margin
-            y4 = poly[7] + np.sin(theta24) * margin
+            x_1 = poly[0] - np.cos(theta13) * margin
+            y_1 = poly[1] - np.sin(theta13) * margin
+            x_2 = poly[2] + np.cos(theta24) * margin
+            y_2 = poly[3] - np.sin(theta24) * margin
+            x_3 = poly[4] + np.cos(theta13) * margin
+            y_3 = poly[5] + np.sin(theta13) * margin
+            x_4 = poly[6] - np.cos(theta24) * margin
+            y_4 = poly[7] + np.sin(theta24) * margin
 
-            free_list.append([[x1, y1], [x2, y2], [x3, y3], [x4, y4]])
+            free_list.append([[x_1, y_1], [x_2, y_2], [x_3, y_3], [x_4, y_4]])
     if sort_output:
         horizontal_list = sorted(horizontal_list, key=lambda item: item[4])
 
@@ -669,7 +682,7 @@ def get_paragraph(raw_result, x_ths=1, y_ths=0.5, mode="ltr"):
                     add_box = True
                     break
             # cannot add more box, go to next group
-            if add_box == False:
+            if add_box is False:
                 current_group += 1
     # arrage order in paragraph
     result = []
