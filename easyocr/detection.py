@@ -162,9 +162,16 @@ def get_detector(trained_model, device="cpu", quantize=True, cudnn_benchmark=Fal
     return net
 
 
-def get_textbox(
-    detector, image, canvas_size, mag_ratio, text_threshold, link_threshold, low_text, poly, device, optimal_num_chars=None
-):
+def get_textbox(detector,
+                image,
+                canvas_size,
+                mag_ratio,
+                text_threshold,
+                link_threshold,
+                low_text,
+                poly,
+                device,
+                optimal_num_chars=None):
     """get_textbox _summary_
 
     Parameters

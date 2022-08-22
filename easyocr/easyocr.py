@@ -135,9 +135,9 @@ class Reader(object):
         # recognition model
         local_separator_list = {}
 
-        if recog_network in ["standard"] + [model for model in recognition_models["gen1"]] + [
-            model for model in recognition_models["gen2"]
-        ]:
+        recog_models_gen1_and_gen_2 = [model for model in recognition_models["gen1"]] + \
+                                      [model for model in recognition_models["gen2"]]
+        if recog_network in ["standard"] + recog_models_gen1_and_gen_2:
             if recog_network in [model for model in recognition_models["gen1"]]:
                 model = recognition_models["gen1"][recog_network]
                 recog_network = "generation1"
@@ -248,7 +248,7 @@ class Reader(object):
 
             available_lang = recog_config["lang_list"]
             self.set_model_language(recog_network, lang_list, available_lang, str(available_lang))
-            # char_file = os.path.join(self.user_network_directory, recog_network+ '.txt')
+            # char_file = os.path.join(self.user_network_directory, recog_network + '.txt')
             self.character = recog_config["character_list"]
             model_file = recog_network + ".pth"
             model_path = os.path.join(self.model_storage_directory, model_file)
@@ -258,6 +258,7 @@ class Reader(object):
         for local_lang in lang_list:
             dict_list[local_lang] = os.path.join(BASE_PATH, "dict", local_lang + ".txt")
 
+# Here we set the detector and the recognizer to be used lated on.
         if detector:
             self.detector = get_detector(detector_path, self.device, quantize, cudnn_benchmark=cudnn_benchmark)
         if recognizer:
@@ -267,6 +268,7 @@ class Reader(object):
                 network_params = {"input_channel": 1, "output_channel": 256, "hidden_size": 256}
             else:
                 network_params = recog_config["network_params"]
+# Caution: one needs the list of words of the targetted languages to get the detector.
             self.recognizer, self.converter = get_recognizer(
                 recog_network,
                 network_params,
@@ -277,6 +279,7 @@ class Reader(object):
                 device=self.device,
                 quantize=quantize,
             )
+
 
     def set_model_language(self, language, lang_list, list_lang, list_lang_string):
         """set_model_language _summary_
@@ -361,7 +364,11 @@ class Reader(object):
         reformat=True,
         optimal_num_chars=None,
     ):
-        """detect _summary_
+        """detect returns a list of horizontal and free bounding boxes.
+        horizontal_list, free_list - horizontal_list is a list of regtangular text boxes:
+        the format is [x_min, x_max, y_min, y_max].
+        Free_list is a list of free-form text boxes:
+        the format is [[x1,y1], [x2,y2], [x3,y3], [x4,y4]].
 
         Parameters
         ----------
@@ -452,6 +459,8 @@ class Reader(object):
         output_format="standard",
     ):
         """recognize _summary_
+        output bounding boxes on the inputted image.
+        If output_format="dict, than a dict is outputted with (to be completted.)
 
         Parameters
         ----------
@@ -667,7 +676,7 @@ class Reader(object):
             add_margin,
             False,
         )
-        # get the 1st result from hor & free list as self.detect returns a list of depth 3
+        # get the 1st result from horizontal & free list as self.detect returns a list of depth 3
         horizontal_list, free_list = horizontal_list[0], free_list[0]
         result = self.recognize(
             img_cv_grey,
