@@ -162,6 +162,37 @@ def recognizer_predict(
 
 def get_recognizer(recog_network, network_params, character, separator_list,
                    dict_list, model_path, device="cpu", quantize=True, verbose=False):
+    """get_recognizer:
+    Returns the correct model te be used as the recognizer.
+    Watch out, this model will be dependant of the dict_list (dict contaning the path to the dict files a given language --> list of words).
+
+    Parameters
+    ----------
+    recog_network : _type_
+        _description_
+    network_params : _type_
+        _description_
+    character : _type_
+        _description_
+    separator_list : _type_
+        _description_
+    dict_list : _type_
+        _description_
+    model_path : _type_
+        _description_
+    device : str, optional
+        _description_, by default "cpu"
+    quantize : bool, optional
+        _description_, by default True
+    verbose : bool, optional
+        _description_, by default False
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+
 
     converter = CTCLabelConverter(character, separator_list, dict_list)
     num_class = len(converter.character)
