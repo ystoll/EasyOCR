@@ -111,3 +111,4 @@ ENV/
 
 # Used to test modifications of easyocr.
 easy_ocr_dev.ipynb
+notes_persos.txt
