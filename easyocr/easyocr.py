@@ -347,23 +347,21 @@ class Reader(object):
         self.lang_char = set(self.lang_char).union(set(symbol))
         self.lang_char = "".join(self.lang_char)
 
-    def detect(
-        self,
-        img,
-        min_size=20,
-        text_threshold=0.7,
-        low_text=0.4,
-        link_threshold=0.4,
-        canvas_size=2560,
-        mag_ratio=1.0,
-        slope_ths=0.1,
-        ycenter_ths=0.5,
-        height_ths=0.5,
-        width_ths=0.5,
-        add_margin=0.1,
-        reformat=True,
-        optimal_num_chars=None,
-    ):
+    def detect(self,
+               img,
+               min_size=20,
+               text_threshold=0.7,
+               low_text=0.4,
+               link_threshold=0.4,
+               canvas_size=2560,
+               mag_ratio=1.0,
+               slope_ths=0.1,
+               ycenter_ths=0.5,
+               height_ths=0.5,
+               width_ths=0.5,
+               add_margin=0.1,
+               reformat=True,
+               optimal_num_chars=None):
         """detect returns a list of horizontal and free bounding boxes.
         horizontal_list, free_list - horizontal_list is a list of regtangular text boxes:
         the format is [x_min, x_max, y_min, y_max].
@@ -410,24 +408,26 @@ class Reader(object):
         if reformat:
             img, _ = reformat_input(img)
 
-        text_box_list = get_textbox(
-            self.detector,
-            img,
-            canvas_size,
-            mag_ratio,
-            text_threshold,
-            link_threshold,
-            low_text,
-            False,
-            self.device,
-            optimal_num_chars,
-        )
+        text_box_list = get_textbox(self.detector,
+                                    img,
+                                    canvas_size,
+                                    mag_ratio,
+                                    text_threshold,
+                                    link_threshold,
+                                    low_text,
+                                    False,
+                                    self.device,
+                                    optimal_num_chars)
 
         horizontal_list_agg, free_list_agg = [], []
         for text_box in text_box_list:
-            horizontal_list, free_list = group_text_box(
-                text_box, slope_ths, ycenter_ths, height_ths, width_ths, add_margin, (optimal_num_chars is None)
-            )
+            horizontal_list, free_list = group_text_box(text_box,
+                                                        slope_ths,
+                                                        ycenter_ths,
+                                                        height_ths,
+                                                        width_ths,
+                                                        add_margin,
+                                                        (optimal_num_chars is None))
             if min_size:
                 horizontal_list = [i for i in horizontal_list if max(i[1] - i[0], i[3] - i[2]) > min_size]
                 free_list = [i for i in free_list if max(diff([c[0] for c in i]), diff([c[1] for c in i])) > min_size]
@@ -436,28 +436,26 @@ class Reader(object):
 
         return horizontal_list_agg, free_list_agg
 
-    def recognize(
-        self,
-        img_cv_grey,
-        horizontal_list=None,
-        free_list=None,
-        decoder="greedy",
-        beam_width=5,
-        batch_size=1,
-        workers=0,
-        allowlist=None,
-        blocklist=None,
-        detail=1,
-        rotation_info=None,
-        paragraph=False,
-        contrast_ths=0.1,
-        adjust_contrast=0.5,
-        filter_ths=0.003,
-        y_ths=0.5,
-        x_ths=1.0,
-        reformat=True,
-        output_format="standard",
-    ):
+    def recognize(self,
+                  img_cv_grey,
+                  horizontal_list=None,
+                  free_list=None,
+                  decoder="greedy",
+                  beam_width=5,
+                  batch_size=1,
+                  workers=0,
+                  allowlist=None,
+                  blocklist=None,
+                  detail=1,
+                  rotation_info=None,
+                  paragraph=False,
+                  contrast_ths=0.1,
+                  adjust_contrast=0.5,
+                  filter_ths=0.003,
+                  y_ths=0.5,
+                  x_ths=1.0,
+                  reformat=True,
+                  output_format="standard"):
         """recognize _summary_
         output bounding boxes on the inputted image.
         If output_format="dict, than a dict is outputted with (to be completted.)
@@ -534,45 +532,41 @@ class Reader(object):
                 h_list = [bbox]
                 f_list = []
                 image_list, max_width = get_image_list(h_list, f_list, img_cv_grey, model_height=imgH)
-                result0 = get_text(
-                    self.character,
-                    imgH,
-                    int(max_width),
-                    self.recognizer,
-                    self.converter,
-                    image_list,
-                    ignore_char,
-                    decoder,
-                    beam_width,
-                    batch_size,
-                    contrast_ths,
-                    adjust_contrast,
-                    filter_ths,
-                    workers,
-                    self.device,
-                )
+                result0 = get_text(self.character,
+                                   imgH,
+                                   int(max_width),
+                                   self.recognizer,
+                                   self.converter,
+                                   image_list,
+                                   ignore_char,
+                                   decoder,
+                                   beam_width,
+                                   batch_size,
+                                   contrast_ths,
+                                   adjust_contrast,
+                                   filter_ths,
+                                   workers,
+                                   self.device)
                 result += result0
             for bbox in free_list:
                 h_list = []
                 f_list = [bbox]
                 image_list, max_width = get_image_list(h_list, f_list, img_cv_grey, model_height=imgH)
-                result0 = get_text(
-                    self.character,
-                    imgH,
-                    int(max_width),
-                    self.recognizer,
-                    self.converter,
-                    image_list,
-                    ignore_char,
-                    decoder,
-                    beam_width,
-                    batch_size,
-                    contrast_ths,
-                    adjust_contrast,
-                    filter_ths,
-                    workers,
-                    self.device,
-                )
+                result0 = get_text(self.character,
+                                   imgH,
+                                   int(max_width),
+                                   self.recognizer,
+                                   self.converter,
+                                   image_list,
+                                   ignore_char,
+                                   decoder,
+                                   beam_width,
+                                   batch_size,
+                                   contrast_ths,
+                                   adjust_contrast,
+                                   filter_ths,
+                                   workers,
+                                   self.device)
                 result += result0
         # default mode will try to process multiple boxes at the same time
         else:
@@ -582,23 +576,21 @@ class Reader(object):
                 image_list = make_rotated_img_list(rotation_info, image_list)
                 max_width = max(max_width, imgH)
 
-            result = get_text(
-                self.character,
-                imgH,
-                int(max_width),
-                self.recognizer,
-                self.converter,
-                image_list,
-                ignore_char,
-                decoder,
-                beam_width,
-                batch_size,
-                contrast_ths,
-                adjust_contrast,
-                filter_ths,
-                workers,
-                self.device,
-            )
+            result = get_text(self.character,
+                              imgH,
+                              int(max_width),
+                              self.recognizer,
+                              self.converter,
+                              image_list,
+                              ignore_char,
+                              decoder,
+                              beam_width,
+                              batch_size,
+                              contrast_ths,
+                              adjust_contrast,
+                              filter_ths,
+                              workers,
+                              self.device)
 
             if rotation_info and (horizontal_list + free_list):
                 # Reshape result to be a list of lists, each row being for
@@ -625,36 +617,34 @@ class Reader(object):
         else:
             return result
 
-    def readtext(
-        self,
-        image,
-        decoder="greedy",
-        beam_width=5,
-        batch_size=1,
-        workers=0,
-        allowlist=None,
-        blocklist=None,
-        detail=1,
-        rotation_info=None,
-        paragraph=False,
-        min_size=20,
-        contrast_ths=0.1,
-        adjust_contrast=0.5,
-        filter_ths=0.003,
-        text_threshold=0.7,
-        low_text=0.4,
-        link_threshold=0.4,
-        canvas_size=2560,
-        mag_ratio=1.0,
-        slope_ths=0.1,
-        ycenter_ths=0.5,
-        height_ths=0.5,
-        width_ths=0.5,
-        y_ths=0.5,
-        x_ths=1.0,
-        add_margin=0.1,
-        output_format="standard",
-    ):
+    def readtext(self,
+                image,
+                decoder="greedy",
+                beam_width=5,
+                batch_size=1,
+                workers=0,
+                allowlist=None,
+                blocklist=None,
+                detail=1,
+                rotation_info=None,
+                paragraph=False,
+                min_size=20,
+                contrast_ths=0.1,
+                adjust_contrast=0.5,
+                filter_ths=0.003,
+                text_threshold=0.7,
+                low_text=0.4,
+                link_threshold=0.4,
+                canvas_size=2560,
+                mag_ratio=1.0,
+                slope_ths=0.1,
+                ycenter_ths=0.5,
+                height_ths=0.5,
+                width_ths=0.5,
+                y_ths=0.5,
+                x_ths=1.0,
+                add_margin=0.1,
+                output_format="standard"):
         """
         Parameters:
         image: file path or numpy-array or a byte stream object
@@ -678,104 +668,96 @@ class Reader(object):
         )
         # get the 1st result from horizontal & free list as self.detect returns a list of depth 3
         horizontal_list, free_list = horizontal_list[0], free_list[0]
-        result = self.recognize(
-            img_cv_grey,
-            horizontal_list,
-            free_list,
-            decoder,
-            beam_width,
-            batch_size,
-            workers,
-            allowlist,
-            blocklist,
-            detail,
-            rotation_info,
-            paragraph,
-            contrast_ths,
-            adjust_contrast,
-            filter_ths,
-            y_ths,
-            x_ths,
-            False,
-            output_format,
-        )
+        result = self.recognize(img_cv_grey,
+                                horizontal_list,
+                                free_list,
+                                decoder,
+                                beam_width,
+                                batch_size,
+                                workers,
+                                allowlist,
+                                blocklist,
+                                detail,
+                                rotation_info,
+                                paragraph,
+                                contrast_ths,
+                                adjust_contrast,
+                                filter_ths,
+                                y_ths,
+                                x_ths,
+                                False,
+                                output_format)
 
         return result
 
-    def readtextlang(
-        self,
-        image,
-        decoder="greedy",
-        beam_width=5,
-        batch_size=1,
-        workers=0,
-        allowlist=None,
-        blocklist=None,
-        detail=1,
-        rotation_info=None,
-        paragraph=False,
-        min_size=20,
-        contrast_ths=0.1,
-        adjust_contrast=0.5,
-        filter_ths=0.003,
-        text_threshold=0.7,
-        low_text=0.4,
-        link_threshold=0.4,
-        canvas_size=2560,
-        mag_ratio=1.0,
-        slope_ths=0.1,
-        ycenter_ths=0.5,
-        height_ths=0.5,
-        width_ths=0.5,
-        y_ths=0.5,
-        x_ths=1.0,
-        add_margin=0.1,
-        output_format="standard",
-    ):
+    def readtextlang(self,
+                    image,
+                    decoder="greedy",
+                    beam_width=5,
+                    batch_size=1,
+                    workers=0,
+                    allowlist=None,
+                    blocklist=None,
+                    detail=1,
+                    rotation_info=None,
+                    paragraph=False,
+                    min_size=20,
+                    contrast_ths=0.1,
+                    adjust_contrast=0.5,
+                    filter_ths=0.003,
+                    text_threshold=0.7,
+                    low_text=0.4,
+                    link_threshold=0.4,
+                    canvas_size=2560,
+                    mag_ratio=1.0,
+                    slope_ths=0.1,
+                    ycenter_ths=0.5,
+                    height_ths=0.5,
+                    width_ths=0.5,
+                    y_ths=0.5,
+                    x_ths=1.0,
+                    add_margin=0.1,
+                    output_format="standard"):
         """
         Parameters:
         image: file path or numpy-array or a byte stream object
         """
         img, img_cv_grey = reformat_input(image)
 
-        horizontal_list, free_list = self.detect(
-            img,
-            min_size,
-            text_threshold,
-            low_text,
-            link_threshold,
-            canvas_size,
-            mag_ratio,
-            slope_ths,
-            ycenter_ths,
-            height_ths,
-            width_ths,
-            add_margin,
-            False,
-        )
+        horizontal_list, free_list = self.detect(img,
+                                                 min_size,
+                                                 text_threshold,
+                                                 low_text,
+                                                 link_threshold,
+                                                 canvas_size,
+                                                 mag_ratio,
+                                                 slope_ths,
+                                                 ycenter_ths,
+                                                 height_ths,
+                                                 width_ths,
+                                                 add_margin,
+                                                 False)
         # get the 1st result from hor & free list as self.detect returns a list of depth 3
         horizontal_list, free_list = horizontal_list[0], free_list[0]
-        result = self.recognize(
-            img_cv_grey,
-            horizontal_list,
-            free_list,
-            decoder,
-            beam_width,
-            batch_size,
-            workers,
-            allowlist,
-            blocklist,
-            detail,
-            rotation_info,
-            paragraph,
-            contrast_ths,
-            adjust_contrast,
-            filter_ths,
-            y_ths,
-            x_ths,
-            False,
-            output_format,
-        )
+        result = self.recognize(img_cv_grey,
+                                horizontal_list,
+                                free_list,
+                                decoder,
+                                beam_width,
+                                batch_size,
+                                workers,
+                                allowlist,
+                                blocklist,
+                                detail,
+                                rotation_info,
+                                paragraph,
+                                contrast_ths,
+                                adjust_contrast,
+                                filter_ths,
+                                y_ths,
+                                x_ths,
+                                False,
+                                output_format)
 
         char = []
         #directory = "characters/"
@@ -807,38 +789,36 @@ class Reader(object):
                             if filename[0:2] == "en" or filename[0:2] == "ch":
                                 print(tupleadd(i))
 
-    def readtext_batched(
-        self,
-        image,
-        n_width=None,
-        n_height=None,
-        decoder="greedy",
-        beam_width=5,
-        batch_size=1,
-        workers=0,
-        allowlist=None,
-        blocklist=None,
-        detail=1,
-        rotation_info=None,
-        paragraph=False,
-        min_size=20,
-        contrast_ths=0.1,
-        adjust_contrast=0.5,
-        filter_ths=0.003,
-        text_threshold=0.7,
-        low_text=0.4,
-        link_threshold=0.4,
-        canvas_size=2560,
-        mag_ratio=1.0,
-        slope_ths=0.1,
-        ycenter_ths=0.5,
-        height_ths=0.5,
-        width_ths=0.5,
-        y_ths=0.5,
-        x_ths=1.0,
-        add_margin=0.1,
-        output_format="standard",
-    ):
+    def readtext_batched(self,
+                         image,
+                         n_width=None,
+                         n_height=None,
+                         decoder="greedy",
+                         beam_width=5,
+                         batch_size=1,
+                         workers=0,
+                         allowlist=None,
+                         blocklist=None,
+                         detail=1,
+                         rotation_info=None,
+                         paragraph=False,
+                         min_size=20,
+                         contrast_ths=0.1,
+                         adjust_contrast=0.5,
+                         filter_ths=0.003,
+                         text_threshold=0.7,
+                         low_text=0.4,
+                         link_threshold=0.4,
+                         canvas_size=2560,
+                         mag_ratio=1.0,
+                         slope_ths=0.1,
+                         ycenter_ths=0.5,
+                         height_ths=0.5,
+                         width_ths=0.5,
+                         y_ths=0.5,
+                         x_ths=1.0,
+                         add_margin=0.1,
+                         output_format="standard"):
         """
         Parameters:
         image: file path or numpy-array or a byte stream object
@@ -849,47 +829,42 @@ class Reader(object):
         """
         img, img_cv_grey = reformat_input_batched(image, n_width, n_height)
 
-        horizontal_list_agg, free_list_agg = self.detect(
-            img,
-            min_size,
-            text_threshold,
-            low_text,
-            link_threshold,
-            canvas_size,
-            mag_ratio,
-            slope_ths,
-            ycenter_ths,
-            height_ths,
-            width_ths,
-            add_margin,
-            False,
-        )
+        horizontal_list_agg, free_list_agg = self.detect(img,
+                                                         min_size,
+                                                         text_threshold,
+                                                         low_text,
+                                                         link_threshold,
+                                                         canvas_size,
+                                                         mag_ratio,
+                                                         slope_ths,
+                                                         ycenter_ths,
+                                                         height_ths,
+                                                         width_ths,
+                                                         add_margin,
+                                                         False)
         result_agg = []
         # put img_cv_grey in a list if its a single img
         img_cv_grey = [img_cv_grey] if len(img_cv_grey.shape) == 2 else img_cv_grey
         for grey_img, horizontal_list, free_list in zip(img_cv_grey, horizontal_list_agg, free_list_agg):
             result_agg.append(
-                self.recognize(
-                    grey_img,
-                    horizontal_list,
-                    free_list,
-                    decoder,
-                    beam_width,
-                    batch_size,
-                    workers,
-                    allowlist,
-                    blocklist,
-                    detail,
-                    rotation_info,
-                    paragraph,
-                    contrast_ths,
-                    adjust_contrast,
-                    filter_ths,
-                    y_ths,
-                    x_ths,
-                    False,
-                    output_format,
-                )
-            )
+                self.recognize(grey_img,
+                               horizontal_list,
+                               free_list,
+                               decoder,
+                               beam_width,
+                               batch_size,
+                               workers,
+                               allowlist,
+                               blocklist,
+                               detail,
+                               rotation_info,
+                               paragraph,
+                               contrast_ths,
+                               adjust_contrast,
+                               filter_ths,
+                               y_ths,
+                               x_ths,
+                               False,
+                               output_format))
 
         return result_agg

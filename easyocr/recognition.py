@@ -160,8 +160,15 @@ def recognizer_predict(
     return result
 
 
-def get_recognizer(recog_network, network_params, character, separator_list,
-                   dict_list, model_path, device="cpu", quantize=True, verbose=False):
+def get_recognizer(recog_network,
+                   network_params,
+                   character,
+                   separator_list,
+                   dict_list,
+                   model_path,
+                   device="cpu",
+                   quantize=True,
+                   verbose=False):
     """get_recognizer:
     Returns the correct model te be used as the recognizer.
     Watch out, this model will be dependant of the dict_list (dict contaning the path to the dict files a given language --> list of words).
@@ -226,24 +233,22 @@ def get_recognizer(recog_network, network_params, character, separator_list,
     return model, converter
 
 
-def get_text(
-    character,
-    imgH,
-    imgW,
-    recognizer,
-    converter,
-    image_list,
-    ignore_char="",
-    decoder="greedy",
-    beam_width=5,
-    batch_size=1,
-    contrast_ths=0.1,
-    adjust_contrast=0.5,
-    filter_ths=0.003,
-    workers=1,
-    device="cpu",
-    verbose=False
-):
+def get_text(character,
+             imgH,
+             imgW,
+             recognizer,
+             converter,
+             image_list,
+             ignore_char="",
+             decoder="greedy",
+             beam_width=5,
+             batch_size=1,
+             contrast_ths=0.1,
+             adjust_contrast=0.5,
+             filter_ths=0.003,
+             workers=1,
+             device="cpu",
+             verbose=False):
     del filter_ths  # deleting for now unused variable filter_ths.
     batch_max_length = int(imgW / 10)
 
@@ -261,14 +266,23 @@ def get_text(
     img_list = [item[1] for item in image_list]
     align_collate_normal = AlignCollate(imgH=imgH, imgW=imgW, keep_ratio_with_pad=True)
     test_data = ListDataset(img_list)
-    test_loader = torch.utils.data.DataLoader(
-        test_data, batch_size=batch_size, shuffle=False, num_workers=int(workers), collate_fn=align_collate_normal, pin_memory=True
-    )
+    test_loader = torch.utils.data.DataLoader(test_data,
+                                              batch_size=batch_size,
+                                              shuffle=False,
+                                              num_workers=int(workers),
+                                              collate_fn=align_collate_normal,
+                                              pin_memory=True)
 
     # predict first round
-    result1 = recognizer_predict(
-        recognizer, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder, beam_width, device=device
-    )
+    result1 = recognizer_predict(recognizer,
+                                 converter,
+                                 test_loader,
+                                 batch_max_length,
+                                 ignore_idx,
+                                 char_group_idx,
+                                 decoder,
+                                 beam_width,
+                                 device=device)
 
     # predict second round
     low_confident_idx = [i for i, item in enumerate(result1) if item[1] < contrast_ths]
@@ -276,17 +290,21 @@ def get_text(
         img_list2 = [img_list[i] for i in low_confident_idx]
         align_collate_contrast = AlignCollate(imgH=imgH, imgW=imgW, keep_ratio_with_pad=True, adjust_contrast=adjust_contrast)
         test_data = ListDataset(img_list2)
-        test_loader = torch.utils.data.DataLoader(
-            test_data,
-            batch_size=batch_size,
-            shuffle=False,
-            num_workers=int(workers),
-            collate_fn=align_collate_contrast,
-            pin_memory=True,
-        )
-        result2 = recognizer_predict(
-            recognizer, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder, beam_width, device=device
-        )
+        test_loader = torch.utils.data.DataLoader(test_data,
+                                                  batch_size=batch_size,
+                                                  shuffle=False,
+                                                  num_workers=int(workers),
+                                                  collate_fn=align_collate_contrast,
+                                                  pin_memory=True)
+        result2 = recognizer_predict(recognizer,
+                                     converter,
+                                     test_loader,
+                                     batch_max_length,
+                                     ignore_idx,
+                                     char_group_idx,
+                                     decoder,
+                                     beam_width,
+                                     device=device)
 
     result = []
     for i, zipped in enumerate(zip(coord, result1)):
