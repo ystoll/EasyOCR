@@ -102,9 +102,15 @@ class AlignCollate(object):
         return image_tensors
 
 
-def recognizer_predict(
-    model, converter, test_loader, batch_max_length, ignore_idx, char_group_idx, decoder="greedy", beam_width=5, device="cpu"
-):
+def recognizer_predict(model,
+                       converter,
+                       test_loader,
+                       batch_max_length,
+                       ignore_idx,
+                       char_group_idx,
+                       decoder="greedy",
+                       beam_width=5,
+                       device="cpu"):
     del char_group_idx  # deleting for now unused variable char_group_idx.
     model.eval()
     result = []
