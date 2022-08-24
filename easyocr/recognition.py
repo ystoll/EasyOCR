@@ -66,7 +66,11 @@ class ListDataset(torch.utils.data.Dataset):
 
 
 class AlignCollate(object):
-    def __init__(self, imgH=32, imgW=100, keep_ratio_with_pad=False, adjust_contrast=0.0):
+    def __init__(self,
+                 imgH=32,
+                 imgW=100,
+                 keep_ratio_with_pad=False,
+                 adjust_contrast=0.0):
         self.imgH = imgH
         self.imgW = imgW
         self.keep_ratio_with_pad = keep_ratio_with_pad
@@ -102,8 +106,8 @@ class AlignCollate(object):
         return image_tensors
 
 
-def recognizer_predict(model,
-                       converter,
+def recognizer_predict(model,  # model --> recognizer
+                       converter,  # converter is an instance of the class CTCLabelConverter.
                        test_loader,
                        batch_max_length,
                        ignore_idx,
@@ -111,7 +115,36 @@ def recognizer_predict(model,
                        decoder="greedy",
                        beam_width=5,
                        device="cpu"):
+    """recognizer_predict predicts the text  with its confidence score associated with each bounding boxe.
+
+    Parameters
+    ----------
+    model : _type_
+        _description_
+    converter : _type_
+        _description_
+    test_loader : _type_
+        _description_
+    batch_max_length : _type_
+        _description_
+    ignore_idx : _type_
+        _description_
+    char_group_idx : _type_
+        _description_
+    decoder : str, optional
+        _description_, by default "greedy"
+    beam_width : int, optional
+        _description_, by default 5
+    device : str, optional
+        _description_, by default "cpu"
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
     del char_group_idx  # deleting for now unused variable char_group_idx.
+    # Evaluation of the model (recognizer)
     model.eval()
     result = []
     with torch.no_grad():
@@ -123,18 +156,25 @@ def recognizer_predict(model,
             # length_for_pred = torch.IntTensor([batch_max_length] * batch_size).to(device)
             text_for_pred = torch.LongTensor(batch_size, batch_max_length + 1).fill_(0).to(device)
 
+            # raw predictions of the model (logits).
             preds = model(image, text_for_pred)
-
+            # # Yannick
+            # print(f" preds shape of the logits: {preds.shape} ")
             # Select max probabilty (greedy decoding) then decode index to character
             preds_size = torch.IntTensor([preds.size(1)] * batch_size)
 
             ######## filter ignore_char, rebalance
+            # Pass logits into softmax to turn logits in probability (one per character).
             preds_prob = F.softmax(preds, dim=2)
             preds_prob = preds_prob.cpu().detach().numpy()
+            # Make sure that probability for ignored character are actually set to zero.
             preds_prob[:, :, ignore_idx] = 0.0
+
+            # Normalization of the probability.
             pred_norm = preds_prob.sum(axis=2)
-            preds_prob = preds_prob / np.expand_dims(pred_norm, axis=-1)
-            preds_prob = torch.from_numpy(preds_prob).float().to(device)
+            preds_prob = preds_prob / np.expand_dims(pred_norm, axis=-1)  # Here we have indeed probs between 0 and 1.
+
+            preds_prob = torch.from_numpy(preds_prob).float().to(device)  # shape [batch_size, ?, num_character]
 
             if decoder == "greedy":
                 # Select max probabilty (greedy decoding) then decode index to character
@@ -148,6 +188,7 @@ def recognizer_predict(model,
                 k = preds_prob.cpu().detach().numpy()
                 preds_str = converter.decode_wordbeamsearch(k, beam_width=beam_width)
 
+            # Computation of the confidence score.
             preds_prob = preds_prob.cpu().detach().numpy()
             values = preds_prob.max(axis=2)
             indices = preds_prob.argmax(axis=2)
@@ -159,6 +200,7 @@ def recognizer_predict(model,
                 else:
                     preds_max_prob.append(np.array([0]))
 
+            # we add both the the prediction and the confidence score to the result.
             for pred, pred_max_prob in zip(preds_str, preds_max_prob):
                 confidence_score = custom_mean(pred_max_prob)
                 result.append([pred, confidence_score])
@@ -176,7 +218,7 @@ def get_recognizer(recog_network,
                    quantize=True,
                    verbose=False):
     """get_recognizer:
-    Returns the correct model te be used as the recognizer.
+    Returns the correct model te be used as the recognizer as well as the converter (contains bearm search algo and CTC).
     Watch out, this model will be dependant of the dict_list (dict contaning the path to the dict files a given language --> list of words).
 
     Parameters
@@ -206,8 +248,9 @@ def get_recognizer(recog_network,
         _description_
     """
 
-
+    # The converter depends on the list of words of the language (dict_list).
     converter = CTCLabelConverter(character, separator_list, dict_list)
+    # The number of classes at the end of the ResNect + BiLSTM is the number of character.
     num_class = len(converter.character)
 
     if recog_network == "generation1":
@@ -289,6 +332,7 @@ def get_text(character,
                                  decoder,
                                  beam_width,
                                  device=device)
+    # print(f"result1: {result1}")
 
     # predict second round
     low_confident_idx = [i for i, item in enumerate(result1) if item[1] < contrast_ths]

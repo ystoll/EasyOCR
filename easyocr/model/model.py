@@ -11,10 +11,12 @@ class Model(nn.Module):
         self.AdaptiveAvgPool = nn.AdaptiveAvgPool2d((None, 1))  # Transform final (imgH/16-1) -> 1
 
        # """ Sequence modeling"""
-        self.SequenceModeling = nn.Sequential(
-            BidirectionalLSTM(self.FeatureExtraction_output, hidden_size, hidden_size),
-            BidirectionalLSTM(hidden_size, hidden_size, hidden_size),
-        )
+        self.SequenceModeling = nn.Sequential(BidirectionalLSTM(self.FeatureExtraction_output,
+                                                                hidden_size,
+                                                                hidden_size),
+                                              BidirectionalLSTM(hidden_size,
+                                                                hidden_size,
+                                                                hidden_size))
         self.SequenceModeling_output = hidden_size
 
        # """ Prediction """
