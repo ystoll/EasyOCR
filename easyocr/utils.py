@@ -98,6 +98,8 @@ class BeamState:
         sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal * x.prText)
         return [x.labeling for x in sortedBeams]
 
+    # Watchout wordsearch() uses dict_list to decode the best text with the help of dict_list (if dict_list is not None).
+    # decodeBeamSearch set dict_list to None and so does not call wordsearch.
     def wordsearch(self, classes, ignore_idx, maxCandidate, dict_list):
         beams = [v for (_, v) in self.entries.items()]
         sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal * x.prText)
@@ -114,12 +116,12 @@ class BeamState:
             if j == 0:
                 best_text = text
             if text in dict_list:
-                # print('found text: ', text)
+               # print('found text: ', text)
                 best_text = text
                 break
             else:
                 pass
-                # print('not in dict: ', text)
+               # print('not in dict: ', text)
         return best_text
 
 
@@ -199,7 +201,12 @@ def addBeam(beamState, labeling):
         beamState.entries[labeling] = BeamEntry()
 
 
-def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=None):
+def ctcBeamSearch(mat,
+                  classes,
+                  ignore_idx,
+                  lm,
+                  beam_width=25,
+                  dict_list=None):
     if dict_list is None:
         dict_list = []
     blankIdx = 0
@@ -273,7 +280,7 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=None):
 
                 # apply LM
                 # applyLM(curr.entries[labeling], curr.entries[newLabeling], classes, lm)
-                del lm  # deleting unused var lm
+                # del lm  # deleting unused var lm
 
         # set new beam state
 
@@ -281,7 +288,7 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=None):
 
     # normalise LM scores according to beam-labeling-length
     last.norm()
-
+  # if decoder=beamsearch, dict_list=[] and it is not used (dict_list is used only when decoder=wordbeamsearch.)
     if dict_list == []:
         bestLabeling = last.sort()[0]  # get most probable labeling
         res = ""
@@ -376,7 +383,11 @@ class CTCLabelConverter(object):
     def decode_beamsearch(self, mat, beam_width=5):
         texts = []
         for i in range(mat.shape[0]):
-            t = ctcBeamSearch(mat[i], self.character, self.ignore_idx, None, beam_width=beam_width)
+            t = ctcBeamSearch(mat[i],
+                              self.character,  # classes = self.character.
+                              self.ignore_idx,
+                              None,
+                              beam_width=beam_width)
             texts.append(t)
         return texts
 
@@ -396,9 +407,12 @@ class CTCLabelConverter(object):
 
                 for j, list_idx in enumerate(group):
                     matrix = mat[i, list_idx, :]
-                    t = ctcBeamSearch(
-                        matrix, self.character, self.ignore_idx, None, beam_width=beam_width, dict_list=self.dict_list
-                    )
+                    t = ctcBeamSearch(matrix,
+                                      self.character,
+                                      self.ignore_idx,
+                                      None,  # lm is None
+                                      beam_width=beam_width,
+                                      dict_list=self.dict_list)
                     if j == 0:
                         string += t
                     else:
@@ -414,7 +428,12 @@ class CTCLabelConverter(object):
                         dict_list = []
                     else:
                         dict_list = self.dict_list[word[0]]
-                    t = ctcBeamSearch(matrix, self.character, self.ignore_idx, None, beam_width=beam_width, dict_list=dict_list)
+                    t = ctcBeamSearch(matrix,
+                                      self.character,
+                                      self.ignore_idx,
+                                      None,  # lm is None
+                                      beam_width=beam_width,
+                                      dict_list=dict_list)
                     string += t
             texts.append(string)
         return texts

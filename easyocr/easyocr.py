@@ -37,20 +37,18 @@ LOGGER = getLogger(__name__)
 
 
 class Reader(object):
-    def __init__(
-        self,
-        lang_list,
-        gpu=True,
-        model_storage_directory=None,
-        user_network_directory=None,
-        recog_network="standard",
-        download_enabled=True,
-        detector=True,
-        recognizer=True,
-        verbose=True,
-        quantize=True,
-        cudnn_benchmark=False,
-    ):
+    def __init__(self,
+                lang_list,
+                gpu=True,
+                model_storage_directory=None,
+                user_network_directory=None,
+                recog_network="standard",
+                download_enabled=True,
+                detector=True,
+                recognizer=True,
+                verbose=True,
+                quantize=True,
+                cudnn_benchmark=False):
         """Create an EasyOCR Reader
 
         Parameters:
@@ -103,16 +101,12 @@ class Reader(object):
             if os.path.isfile(detector_path) is False:
                 if not self.download_enabled:
                     raise FileNotFoundError(f"Missing {detector_path} and downloads disabled")
-                LOGGER.warning(
-                    "Downloading detection model, please wait. "
-                    "This may take several minutes depending upon your network connection."
-                )
-                download_and_unzip(
-                    detection_models[detector_model]["url"],
-                    detection_models[detector_model]["filename"],
-                    self.model_storage_directory,
-                    verbose,
-                )
+                LOGGER.warning("Downloading detection model, please wait. "
+                               "This may take several minutes depending upon your network connection.")
+                download_and_unzip(detection_models[detector_model]["url"],
+                                   detection_models[detector_model]["filename"],
+                                   self.model_storage_directory,
+                                   verbose)
                 assert calculate_md5(detector_path) == detection_models[detector_model]["md5sum"], corrupt_msg
                 LOGGER.info("Download complete")
             elif calculate_md5(detector_path) != detection_models[detector_model]["md5sum"]:
@@ -120,18 +114,16 @@ class Reader(object):
                     raise FileNotFoundError(f"MD5 mismatch for {detector_path} and downloads disabled")
                 LOGGER.warning(corrupt_msg)
                 os.remove(detector_path)
-                LOGGER.warning(
-                    "Re-downloading the detection model, please wait. "
-                    "This may take several minutes depending upon your network connection."
-                )
-                download_and_unzip(
-                    detection_models[detector_model]["url"],
-                    detection_models[detector_model]["filename"],
-                    self.model_storage_directory,
-                    verbose,
-                )
+                LOGGER.warning("Re-downloading the detection model, please wait. "
+                               "This may take several minutes depending upon your network connection.")
+                download_and_unzip(detection_models[detector_model]["url"],
+                                   detection_models[detector_model]["filename"],
+                                   self.model_storage_directory,
+                                   verbose)
                 assert calculate_md5(detector_path) == detection_models[detector_model]["md5sum"], corrupt_msg
 
+
+############# Selection of the recognition model.
         # recognition model
         local_separator_list = {}
 
@@ -139,6 +131,7 @@ class Reader(object):
                                       [model for model in recognition_models["gen2"]]
         if recog_network in ["standard"] + recog_models_gen1_and_gen_2:
             if recog_network in [model for model in recognition_models["gen1"]]:
+                # Definition of the model.
                 model = recognition_models["gen1"][recog_network]
                 recog_network = "generation1"
                 self.model_lang = model["model_script"]
@@ -200,9 +193,7 @@ class Reader(object):
                     model = recognition_models["gen1"]["devanagari_g1"]
                     recog_network = "generation1"
                 elif set(lang_list) & set(cyrillic_lang_list):
-                    self.set_model_language(
-                        "cyrillic", lang_list, cyrillic_lang_list + ["en"], '["ru","rs_cyrillic","be","bg","uk","mn","en"]'
-                    )
+                    self.set_model_language("cyrillic", lang_list, cyrillic_lang_list + ["en"], '["ru","rs_cyrillic","be","bg","uk","mn","en"]')
                     model = recognition_models["gen1"]["cyrillic_g1"]
                     recog_network = "generation1"
                 else:
@@ -211,16 +202,17 @@ class Reader(object):
                     recog_network = "generation2"
             self.character = model["characters"]
 
+# End of selection of the recognition model.
+##############################
+
             model_path = os.path.join(self.model_storage_directory, model["filename"])
             # check recognition model file
             if recognizer:
                 if os.path.isfile(model_path) is False:
                     if not self.download_enabled:
                         raise FileNotFoundError(f"Missing {model_path} and downloads disabled")
-                    LOGGER.warning(
-                        "Downloading recognition model, please wait. "
-                        "This may take several minutes depending upon your network connection."
-                    )
+                    LOGGER.warning("Downloading recognition model, please wait. "
+                                   "This may take several minutes depending upon your network connection.")
                     download_and_unzip(model["url"], model["filename"], self.model_storage_directory, verbose)
                     assert calculate_md5(model_path) == model["md5sum"], corrupt_msg
                     LOGGER.info("Download complete.")
@@ -229,10 +221,8 @@ class Reader(object):
                         raise FileNotFoundError(f"MD5 mismatch for {model_path} and downloads disabled")
                     LOGGER.warning(corrupt_msg)
                     os.remove(model_path)
-                    LOGGER.warning(
-                        "Re-downloading the recognition model, please wait. "
-                        "This may take several minutes depending upon your network connection."
-                    )
+                    LOGGER.warning("Re-downloading the recognition model, please wait. "
+                                   "This may take several minutes depending upon your network connection.")
                     download_and_unzip(model["url"], model["filename"], self.model_storage_directory, verbose)
                     assert calculate_md5(model_path) == model["md5sum"], corrupt_msg
                     LOGGER.info("Download complete")
@@ -268,17 +258,15 @@ class Reader(object):
                 network_params = {"input_channel": 1, "output_channel": 256, "hidden_size": 256}
             else:
                 network_params = recog_config["network_params"]
-# Caution: one needs the list of words of the targetted languages to get the detector.
-            self.recognizer, self.converter = get_recognizer(
-                recog_network,
-                network_params,
-                self.character,
-                local_separator_list,
-                dict_list,
-                model_path,
-                device=self.device,
-                quantize=quantize,
-            )
+# Caution: one needs the list of words of the targetted languages to get the converter (dict_list).
+            self.recognizer, self.converter = get_recognizer(recog_network,
+                                                             network_params,
+                                                             self.character,
+                                                             local_separator_list,
+                                                             dict_list,
+                                                             model_path,
+                                                             device=self.device,
+                                                             quantize=quantize)
 
 
     def set_model_language(self, language, lang_list, list_lang, list_lang_string):

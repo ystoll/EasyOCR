@@ -12,14 +12,17 @@ class Model(nn.Module):
         self.AdaptiveAvgPool = nn.AdaptiveAvgPool2d((None, 1))
 
        # """ Sequence modeling"""
-        self.SequenceModeling = nn.Sequential(
-            BidirectionalLSTM(self.FeatureExtraction_output, hidden_size, hidden_size),
-            BidirectionalLSTM(hidden_size, hidden_size, hidden_size),
-        )
+        self.SequenceModeling = nn.Sequential(BidirectionalLSTM(self.FeatureExtraction_output,
+                                                                hidden_size,
+                                                                hidden_size),
+                                              BidirectionalLSTM(hidden_size,
+                                                                hidden_size,
+                                                                hidden_size))
         self.SequenceModeling_output = hidden_size
 
        # """ Prediction """
-        self.Prediction = nn.Linear(self.SequenceModeling_output, num_class)
+       # Here num_classes is the number of characters of the model considered.
+        self.Prediction = nn.Linear(self.SequenceModeling_output, num_class)  # here, num_class is the number of characters.
 
     def forward(self, input, text):
        # """Feature extraction stage"""
@@ -31,9 +34,7 @@ class Model(nn.Module):
         contextual_feature = self.SequenceModeling(visual_feature)
 
        # """ Prediction stage """
+       # Prediction will then be processed by CTC (Connectionnist Temporal Classification) algorithm
         prediction = self.Prediction(contextual_feature.contiguous())
-
-        # print("Yannick")
-        # pprint.pprint(f"Prediction: {prediction.shape}")
 
         return prediction
