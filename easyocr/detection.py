@@ -36,9 +36,15 @@ def copy_state_dict(state_dict):
     return new_state_dict
 
 
-def test_net(
-    canvas_size, mag_ratio, net, image, text_threshold, link_threshold, low_text, poly, device, estimate_num_chars=False
-):
+def test_net(canvas_size,
+             mag_ratio,
+             net,
+             image,
+             text_threshold,
+             link_threshold,
+             low_text, poly,
+             device,
+             estimate_num_chars=False):
     """test_net _summary_
 
     Parameters
@@ -77,9 +83,10 @@ def test_net(
     img_resized_list = []
     # resize
     for img in image_arrs:
-        img_resized, target_ratio, size_heatmap = resize_aspect_ratio(
-            img, canvas_size, interpolation=cv2.INTER_LINEAR, mag_ratio=mag_ratio
-        )
+        img_resized, target_ratio, size_heatmap = resize_aspect_ratio(img,
+                                                                      canvas_size,
+                                                                      interpolation=cv2.INTER_LINEAR,
+                                                                      mag_ratio=mag_ratio)
         del size_heatmap  # deleting unused size_heatmap variable.
         img_resized_list.append(img_resized)
     ratio_h = ratio_w = 1 / target_ratio
@@ -100,9 +107,13 @@ def test_net(
         score_link = out[:, :, 1].cpu().data.numpy()
 
         # Post-processing
-        boxes, polys, mapper = get_det_boxes(
-            score_text, score_link, text_threshold, link_threshold, low_text, poly, estimate_num_chars
-        )
+        boxes, polys, mapper = get_det_boxes(score_text,
+                                             score_link,
+                                             text_threshold,
+                                             link_threshold,
+                                             low_text,
+                                             poly,
+                                             estimate_num_chars)
 
         # coordinate adjustment
         boxes = adjust_result_coordinates(boxes, ratio_w, ratio_h)
@@ -123,7 +134,11 @@ def test_net(
     return boxes_list, polys_list
 
 
-def get_detector(trained_model, device="cpu", quantize=True, cudnn_benchmark=False, verbose=False):
+def get_detector(trained_model,
+                 device="cpu",
+                 quantize=True,
+                 cudnn_benchmark=False,
+                 verbose=False):
     """get_detector _summary_
 
     Parameters
@@ -204,9 +219,16 @@ def get_textbox(detector,
     """
     result = []
     estimate_num_chars = optimal_num_chars is not None
-    bboxes_list, polys_list = test_net(
-        canvas_size, mag_ratio, detector, image, text_threshold, link_threshold, low_text, poly, device, estimate_num_chars
-    )
+    bboxes_list, polys_list = test_net(canvas_size,
+                                       mag_ratio,
+                                       detector,
+                                       image,
+                                       text_threshold,
+                                       link_threshold,
+                                       low_text,
+                                       poly,
+                                       device,
+                                       estimate_num_chars)
     del bboxes_list  # deleting bboxes_list unused variable.
     if estimate_num_chars:
         polys_list = [[p for p, _ in sorted(polys, key=lambda x: abs(optimal_num_chars - x[1]))] for polys in polys_list]
