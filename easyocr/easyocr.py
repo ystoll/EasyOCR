@@ -17,7 +17,7 @@ from bidi.algorithm import get_display
 from .config import *
 from .detection import get_detector, get_textbox
 from .recognition import get_recognizer, get_text
-from .utils import (calculate_md5, diff,  # printProgressBar,
+from .utils import (calculate_md5, diff,  # print_progress_bar,
                     download_and_unzip, get_image_list, get_paragraph,
                     group_text_box, make_rotated_img_list, reformat_input,
                     reformat_input_batched, set_result_with_confidence)

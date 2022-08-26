@@ -126,16 +126,16 @@ class GaussianBuilder(object):
     def calculate_affinity_box_points(self, bbox_1, bbox_2, vertical=False):
         center_1, center_2 = np.mean(bbox_1, axis=0), np.mean(bbox_2, axis=0)
         if vertical:
-            tl = (bbox_1[0] + bbox_1[-1] + center_1) / 3
-            tr = (bbox_1[1:3].sum(0) + center_1) / 3
-            br = (bbox_2[1:3].sum(0) + center_2) / 3
-            bl = (bbox_2[0] + bbox_2[-1] + center_2) / 3
+            top_left = (bbox_1[0] + bbox_1[-1] + center_1) / 3
+            top_right = (bbox_1[1:3].sum(0) + center_1) / 3
+            bottom_right = (bbox_2[1:3].sum(0) + center_2) / 3
+            bottom_left = (bbox_2[0] + bbox_2[-1] + center_2) / 3
         else:
-            tl = (bbox_1[0:2].sum(0) + center_1) / 3
-            tr = (bbox_2[0:2].sum(0) + center_2) / 3
-            br = (bbox_2[2:4].sum(0) + center_2) / 3
-            bl = (bbox_1[2:4].sum(0) + center_1) / 3
-        affinity_box = np.array([tl, tr, br, bl]).astype(np.float32)
+            top_left = (bbox_1[0:2].sum(0) + center_1) / 3
+            top_right = (bbox_2[0:2].sum(0) + center_2) / 3
+            bottom_right = (bbox_2[2:4].sum(0) + center_2) / 3
+            bottom_left = (bbox_1[2:4].sum(0) + center_1) / 3
+        affinity_box = np.array([top_left, top_right, bottom_right, bottom_left]).astype(np.float32)
         return affinity_box
 
     def generate_region(self, img_h, img_w, word_level_char_bbox, horizontal_text_bools):
