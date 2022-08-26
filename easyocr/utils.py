@@ -63,6 +63,8 @@ def word_segmentation(mat, separator_idx={"th": [1, 2], "en": [3, 4]}, separator
 
     if start_idx <= len(mat) - 1:
         result.append(["", [start_idx, len(mat) - 1]])
+    # Yannick
+    # print(f"result word_segmentation: {result}")
     return result
 
 
@@ -71,11 +73,11 @@ class BeamEntry:
     "information about one single beam at specific time-step"
 
     def __init__(self):
-        self.prTotal = 0  # blank and non-blank
-        self.prNonBlank = 0  # non-blank
-        self.prBlank = 0  # blank
-        self.prText = 1  # LM score
-        self.lmApplied = False  # flag if LM was already applied to this beam
+        self.pr_total = 0  # blank and non-blank
+        self.pr_non_blank = 0  # non-blank
+        self.pr_blank = 0  # blank
+        self.pr_text = 1  # LM score
+        self.lm_applied = False  # flag if LM was already applied to this beam
         self.labeling = ()  # beam-labeling
         self.simplified = True  # To run simplyfiy label
 
@@ -89,29 +91,29 @@ class BeamState:
     def norm(self):
         "length-normalise LM score"
         for (k, _) in self.entries.items():
-            labelingLen = len(self.entries[k].labeling)
-            self.entries[k].prText = self.entries[k].prText ** (1.0 / (labelingLen if labelingLen else 1.0))
+            labeling_len = len(self.entries[k].labeling)
+            self.entries[k].pr_text = self.entries[k].pr_text ** (1.0 / (labeling_len if labeling_len else 1.0))
 
     def sort(self):
         "return beam-labelings, sorted by probability"
         beams = [v for (_, v) in self.entries.items()]
-        sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal * x.prText)
-        return [x.labeling for x in sortedBeams]
+        sorted_beams = sorted(beams, reverse=True, key=lambda x: x.pr_total * x.pr_text)
+        return [x.labeling for x in sorted_beams]
 
     # Watchout wordsearch() uses dict_list to decode the best text with the help of dict_list (if dict_list is not None).
     # decodeBeamSearch set dict_list to None and so does not call wordsearch.
-    def wordsearch(self, classes, ignore_idx, maxCandidate, dict_list):
+    def wordsearch(self, classes, ignore_idx, max_candidate, dict_list):
         beams = [v for (_, v) in self.entries.items()]
-        sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal * x.prText)
-        if len(sortedBeams) > maxCandidate:
-            sortedBeams = sortedBeams[:maxCandidate]
+        sorted_beams = sorted(beams, reverse=True, key=lambda x: x.pr_total * x.pr_text)
+        if len(sorted_beams) > max_candidate:
+            sorted_beams = sorted_beams[:max_candidate]
 
-        for j, candidate in enumerate(sortedBeams):
+        for j, candidate in enumerate(sorted_beams):
             idx_list = candidate.labeling
             text = ""
-            for i, l in enumerate(idx_list):
-                if l not in ignore_idx and (not (i > 0 and idx_list[i - 1] == idx_list[i])):
-                    text += classes[l]
+            for i, label in enumerate(idx_list):
+                if label not in ignore_idx and (not (i > 0 and idx_list[i - 1] == idx_list[i])):
+                    text += classes[label]
 
             if j == 0:
                 best_text = text
@@ -125,26 +127,26 @@ class BeamState:
         return best_text
 
 
-def applyLM(parentBeam, childBeam, classes, lm):
+def apply_lm(parent_beam, child_beam, classes, lang_model):
     "calculate LM score of child beam by taking score from parent beam and bigram probability of last two chars"
-    if lm and not childBeam.lmApplied:
-        c1 = classes[parentBeam.labeling[-1] if parentBeam.labeling else classes.index(" ")]  # first char
-        c2 = classes[childBeam.labeling[-1]]  # second char
-        lmFactor = 0.01  # influence of language model
-        bigramProb = lm.getCharBigram(c1, c2) ** lmFactor  # probability of seeing first and second char next to each other
-        childBeam.prText = parentBeam.prText * bigramProb  # probability of char sequence
-        childBeam.lmApplied = True  # only apply LM once per beam entry
+    if lang_model and not child_beam.lm_applied:
+        classe_1 = classes[parent_beam.labeling[-1] if parent_beam.labeling else classes.index(" ")]  # first char
+        classe_2 = classes[child_beam.labeling[-1]]  # second char
+        lm_factor = 0.01  # influence of language model
+        bigram_prob = lang_model.getCharBigram(classe_1, classe_2) ** lm_factor  # probability of seeing first and second char next to each other
+        child_beam.pr_text = parent_beam.pr_text * bigram_prob  # probability of char sequence
+        child_beam.lm_applied = True  # only apply LM once per beam entry
 
 
-def simplify_label(labeling, blankIdx=0):
+def simplify_label(labeling, blank_idx=0):
     labeling = np.array(labeling)
 
     # collapse blank
-    idx = np.where(~((np.roll(labeling, 1) == labeling) & (labeling == blankIdx)))[0]
+    idx = np.where(~((np.roll(labeling, 1) == labeling) & (labeling == blank_idx)))[0]
     labeling = labeling[idx]
 
     # get rid of blank between different characters
-    idx = np.where(~((np.roll(labeling, 1) != np.roll(labeling, -1)) & (labeling == blankIdx)))[0]
+    idx = np.where(~((np.roll(labeling, 1) != np.roll(labeling, -1)) & (labeling == blank_idx)))[0]
 
     if len(labeling) > 0:
         last_idx = len(labeling) - 1
@@ -155,14 +157,14 @@ def simplify_label(labeling, blankIdx=0):
     return tuple(labeling)
 
 
-def fast_simplify_label(labeling, c, blankIdx=0):
+def fast_simplify_label(labeling, c, blank_idx=0):
 
     # Adding BlankIDX after Non-Blank IDX
-    if labeling and c == blankIdx and labeling[-1] != blankIdx:
+    if labeling and c == blank_idx and labeling[-1] != blank_idx:
         new_labeling = labeling + (c,)
 
     # Case when a nonBlankChar is added after BlankChar |len(char) - 1
-    elif labeling and c != blankIdx and labeling[-1] == blankIdx:
+    elif labeling and c != blank_idx and labeling[-1] == blank_idx:
 
         # If Blank between same character do nothing | As done by Simplify label
         if labeling[-2] == c:
@@ -173,114 +175,115 @@ def fast_simplify_label(labeling, c, blankIdx=0):
             new_labeling = labeling[:-1] + (c,)
 
     # if consecutive blanks : Keep the original label
-    elif labeling and c == blankIdx and labeling[-1] == blankIdx:
+    elif labeling and c == blank_idx and labeling[-1] == blank_idx:
         new_labeling = labeling
 
     # if empty beam & first index is blank
-    elif not labeling and c == blankIdx:
+    elif not labeling and c == blank_idx:
         new_labeling = labeling
 
     # if empty beam & first index is non-blank
-    elif not labeling and c != blankIdx:
+    elif not labeling and c != blank_idx:
         new_labeling = labeling + (c,)
 
-    elif labeling and c != blankIdx:
+    elif labeling and c != blank_idx:
         new_labeling = labeling + (c,)
 
     # Cases that might still require simplyfying
     else:
         new_labeling = labeling + (c,)
-        new_labeling = simplify_label(new_labeling, blankIdx)
+        new_labeling = simplify_label(new_labeling, blank_idx)
 
     return new_labeling
 
 
-def addBeam(beamState, labeling):
+def add_beam(beam_state, labeling):
     "add beam if it does not yet exist"
-    if labeling not in beamState.entries:
-        beamState.entries[labeling] = BeamEntry()
+    if labeling not in beam_state.entries:
+        beam_state.entries[labeling] = BeamEntry()
 
 
-def ctcBeamSearch(mat,
-                  classes,
-                  ignore_idx,
-                  lm,
-                  beam_width=25,
-                  dict_list=None):
+def ctc_beam_search(mat,
+                    classes,  # list of characters.
+                    ignore_idx,  # indexes of characters to be ignored.
+                    lang_model,
+                    beam_width=25,
+                    dict_list=None):  # list of dictionnaries of the targetted languages (used only if decoder="wordbeamsearch").
     if dict_list is None:
         dict_list = []
-    blankIdx = 0
-    maxT, maxC = mat.shape
+    blank_idx = 0
+    max_t, max_c = mat.shape
 
     # initialise beam state
     last = BeamState()
     labeling = ()
     last.entries[labeling] = BeamEntry()
-    last.entries[labeling].prBlank = 1
-    last.entries[labeling].prTotal = 1
+    last.entries[labeling].pr_blank = 1
+    last.entries[labeling].pr_total = 1
 
     # go over all time-steps
-    for t in range(maxT):
+    for curr_time_step in range(max_t):
         curr = BeamState()
         # get beam-labelings of best beams
-        bestLabelings = last.sort()[0:beam_width]
+        best_labelings = last.sort()[0:beam_width]
         # go over best beams
-        for labeling in bestLabelings:
+        for labeling in best_labelings:
             # probability of paths ending with a non-blank
-            prNonBlank = 0
+            pr_non_blank = 0
             # in case of non-empty beam
             if labeling:
                 # probability of paths with repeated last char at the end
-                prNonBlank = last.entries[labeling].prNonBlank * mat[t, labeling[-1]]
+                pr_non_blank = last.entries[labeling].pr_non_blank * mat[curr_time_step, labeling[-1]]
 
             # probability of paths ending with a blank
-            prBlank = (last.entries[labeling].prTotal) * mat[t, blankIdx]
+            pr_blank = (last.entries[labeling].pr_total) * mat[curr_time_step, blank_idx]
 
             # add beam at current time-step if needed
             prev_labeling = labeling
             if not last.entries[labeling].simplified:
-                labeling = simplify_label(labeling, blankIdx)
+                labeling = simplify_label(labeling, blank_idx)
 
-            # labeling = simplify_label(labeling, blankIdx)
-            addBeam(curr, labeling)
+            # labeling = simplify_label(labeling, blank_idx)
+            add_beam(curr, labeling)
 
             # fill in data
             curr.entries[labeling].labeling = labeling
-            curr.entries[labeling].prNonBlank += prNonBlank
-            curr.entries[labeling].prBlank += prBlank
-            curr.entries[labeling].prTotal += prBlank + prNonBlank
-            curr.entries[labeling].prText = last.entries[prev_labeling].prText
+            curr.entries[labeling].pr_non_blank += pr_non_blank
+            curr.entries[labeling].pr_blank += pr_blank
+            curr.entries[labeling].pr_total += pr_blank + pr_non_blank
+            curr.entries[labeling].pr_text = last.entries[prev_labeling].pr_text
             # beam-labeling not changed, therefore also LM score unchanged from
 
-            # curr.entries[labeling].lmApplied = True # LM already applied at previous time-step for this beam-labeling
+            # curr.entries[labeling].lm_applied = True # LM already applied at previous time-step for this beam-labeling
 
             # extend current beam-labeling
-            # char_highscore = np.argpartition(mat[t, :], -5)[-5:] # run through 5 highest probability
-            char_highscore = np.where(mat[t, :] >= 0.5 / maxC)[0]  # run through all probable characters
+            # char_highscore = np.argpartition(mat[t, :], -5)[-5:] # run through 5 highest probability.
+            char_highscore = np.where(mat[curr_time_step, :] >= 0.5 / max_c)[0]  # run through all probable characters.
             for c in char_highscore:
-                # for c in range(maxC - 1):
+                # print(c)
+                # for c in range(max_c - 1):
                 # add new char to current beam-labeling
-                # newLabeling = labeling + (c,)
-                # newLabeling = simplify_label(newLabeling, blankIdx)
-                newLabeling = fast_simplify_label(labeling, c, blankIdx)
+                # new_labeling = labeling + (c,)
+                # new_labeling = simplify_label(new_labeling, blank_idx)
+                new_labeling = fast_simplify_label(labeling, c, blank_idx)
 
                 # if new labeling contains duplicate char at the end, only consider paths ending with a blank
                 if labeling and labeling[-1] == c:
-                    prNonBlank = mat[t, c] * last.entries[prev_labeling].prBlank
+                    pr_non_blank = mat[curr_time_step, c] * last.entries[prev_labeling].pr_blank
                 else:
-                    prNonBlank = mat[t, c] * last.entries[prev_labeling].prTotal
+                    pr_non_blank = mat[curr_time_step, c] * last.entries[prev_labeling].pr_total
 
                 # add beam at current time-step if needed
-                addBeam(curr, newLabeling)
+                add_beam(curr, new_labeling)
 
                 # fill in data
-                curr.entries[newLabeling].labeling = newLabeling
-                curr.entries[newLabeling].prNonBlank += prNonBlank
-                curr.entries[newLabeling].prTotal += prNonBlank
+                curr.entries[new_labeling].labeling = new_labeling
+                curr.entries[new_labeling].pr_non_blank += pr_non_blank
+                curr.entries[new_labeling].pr_total += pr_non_blank
 
                 # apply LM
-                # applyLM(curr.entries[labeling], curr.entries[newLabeling], classes, lm)
-                # del lm  # deleting unused var lm
+                # apply_lm(curr.entries[labeling], curr.entries[new_labeling], classes, lang_model)
+                # del lang_model  # deleting unused var lang_model
 
         # set new beam state
 
@@ -290,11 +293,11 @@ def ctcBeamSearch(mat,
     last.norm()
   # if decoder=beamsearch, dict_list=[] and it is not used (dict_list is used only when decoder=wordbeamsearch.)
     if dict_list == []:
-        bestLabeling = last.sort()[0]  # get most probable labeling
+        best_labeling = last.sort()[0]  # get most probable labeling
         res = ""
-        for i, l in enumerate(bestLabeling):
+        for i, l in enumerate(best_labeling):
             # removing repeated characters and blank.
-            if l not in ignore_idx and (not (i > 0 and bestLabeling[i - 1] == bestLabeling[i])):
+            if l not in ignore_idx and (not (i > 0 and best_labeling[i - 1] == best_labeling[i])):
                 res += classes[l]
     else:
         res = last.wordsearch(classes, ignore_idx, 20, dict_list)
@@ -362,12 +365,19 @@ class CTCLabelConverter(object):
 
         return (torch.IntTensor(text), torch.IntTensor(length))
 
-    def decode_greedy(self, text_index, length):
-        """convert text-index into text-label."""
+    def decode_greedy(self, text_index, length_tensor):
+        """convert text-index into text-label.
+            text_index: numpy.ndarray, dim (?, )
+            length_tensor: Tensor, dtype=Torch.int32 contains only 1 element.
+        Returns:
+            texts: Python list --> contains the text corresponding
+            to the bounding box of interest associated to text_index.
+        """
         texts = []
         index = 0
-        for l in length:
-            t = text_index[index : index + l]
+        for length in length_tensor:
+            t = text_index[index : index + length]  # list of indexes.
+
             # Returns a boolean array where true is when the value is not repeated
             a = np.insert(~((t[1:] == t[:-1])), 0, True)
             # Returns a boolean array where true is when the value is not in the ignore_idx list
@@ -377,17 +387,17 @@ class CTCLabelConverter(object):
             # Gets the corresponding character according to the saved indexes
             text = "".join(np.array(self.character)[t[c.nonzero()]])
             texts.append(text)
-            index += l
+            index += length
         return texts
 
     def decode_beamsearch(self, mat, beam_width=5):
         texts = []
         for i in range(mat.shape[0]):
-            t = ctcBeamSearch(mat[i],
-                              self.character,  # classes = self.character.
-                              self.ignore_idx,
-                              None,
-                              beam_width=beam_width)
+            t = ctc_beam_search(mat[i],
+                                self.character,  # classes = self.character.
+                                self.ignore_idx,
+                                None,
+                                beam_width=beam_width)
             texts.append(t)
         return texts
 
@@ -407,10 +417,10 @@ class CTCLabelConverter(object):
 
                 for j, list_idx in enumerate(group):
                     matrix = mat[i, list_idx, :]
-                    t = ctcBeamSearch(matrix,
+                    t = ctc_beam_search(matrix,
                                       self.character,
                                       self.ignore_idx,
-                                      None,  # lm is None
+                                      None,  # lang_model is None
                                       beam_width=beam_width,
                                       dict_list=self.dict_list)
                     if j == 0:
@@ -428,10 +438,10 @@ class CTCLabelConverter(object):
                         dict_list = []
                     else:
                         dict_list = self.dict_list[word[0]]
-                    t = ctcBeamSearch(matrix,
+                    t = ctc_beam_search(matrix,
                                       self.character,
                                       self.ignore_idx,
-                                      None,  # lm is None
+                                      None,  # lang_model is None
                                       beam_width=beam_width,
                                       dict_list=dict_list)
                     string += t
@@ -440,24 +450,24 @@ class CTCLabelConverter(object):
 
 
 def four_point_transform(image, rect):
-    (tl, tr, br, bl) = rect
+    (top_left, top_right, bottom_right, bottom_left) = rect
 
-    widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
-    widthB = np.sqrt(((tr[0] - tl[0]) ** 2) + ((tr[1] - tl[1]) ** 2))
-    maxWidth = max(int(widthA), int(widthB))
+    width_a = np.sqrt(((bottom_right[0] - bottom_left[0]) ** 2) + ((bottom_right[1] - bottom_left[1]) ** 2))
+    width_b = np.sqrt(((top_right[0] - top_left[0]) ** 2) + ((top_right[1] - top_left[1]) ** 2))
+    max_width = max(int(width_a), int(width_b))
 
     # compute the height of the new image, which will be the
     # maximum distance between the top-right and bottom-right
     # y-coordinates or the top-left and bottom-left y-coordinates
-    heightA = np.sqrt(((tr[0] - br[0]) ** 2) + ((tr[1] - br[1]) ** 2))
-    heightB = np.sqrt(((tl[0] - bl[0]) ** 2) + ((tl[1] - bl[1]) ** 2))
-    maxHeight = max(int(heightA), int(heightB))
+    height_a = np.sqrt(((top_right[0] - bottom_right[0]) ** 2) + ((top_right[1] - bottom_right[1]) ** 2))
+    height_b = np.sqrt(((top_left[0] - bottom_left[0]) ** 2) + ((top_left[1] - bottom_left[1]) ** 2))
+    max_height = max(int(height_a), int(height_b))
 
-    dst = np.array([[0, 0], [maxWidth - 1, 0], [maxWidth - 1, maxHeight - 1], [0, maxHeight - 1]], dtype="float32")
+    dst = np.array([[0, 0], [max_width - 1, 0], [max_width - 1, max_height - 1], [0, max_height - 1]], dtype="float32")
 
     # compute the perspective transform matrix and then apply it
-    M = cv2.getPerspectiveTransform(rect, dst)
-    warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+    persp_transf_mat = cv2.getPerspectiveTransform(rect, dst)
+    warped = cv2.warpPerspective(image, persp_transf_mat, (max_width, max_height))
 
     return warped
 
@@ -646,10 +656,10 @@ def get_image_list(horizontal_list, free_list, img, model_height=64, sort_output
 
 def download_and_unzip(url, filename, model_storage_directory, verbose=True):
     zip_path = os.path.join(model_storage_directory, "temp.zip")
-    reporthook = printProgressBar(prefix="Progress:", suffix="Complete", length=50) if verbose else None
+    reporthook = print_progress_bar(prefix="Progress:", suffix="Complete", length=50) if verbose else None
     urlretrieve(url, zip_path, reporthook=reporthook)
-    with ZipFile(zip_path, "r") as zipObj:
-        zipObj.extract(filename, model_storage_directory)
+    with ZipFile(zip_path, "r") as zip_obj:
+        zip_obj.extract(filename, model_storage_directory)
     os.remove(zip_path)
 
 
@@ -736,7 +746,7 @@ def get_paragraph(raw_result, x_ths=1, y_ths=0.5, mode="ltr"):
     return result
 
 
-def printProgressBar(prefix="", suffix="", decimals=1, length=100, fill="█"):
+def print_progress_bar(prefix="", suffix="", decimals=1, length=100, fill="█"):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -748,33 +758,33 @@ def printProgressBar(prefix="", suffix="", decimals=1, length=100, fill="█"):
         printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
     """
 
-    def progress_hook(count, blockSize, totalSize):
-        progress = count * blockSize / totalSize
+    def progress_hook(count, block_size, total_size):
+        progress = count * block_size / total_size
         percent = ("{0:." + str(decimals) + "f}").format(progress * 100)
-        filledLength = int(length * progress)
-        bar = fill * filledLength + "-" * (length - filledLength)
-        print(f"\r{prefix} |{bar}| {percent}% {suffix}", end="")
+        filled_length = int(length * progress)
+        bar_ = fill * filled_length + "-" * (length - filled_length)
+        print(f"\r{prefix} |{bar_}| {percent}% {suffix}", end="")
 
     return progress_hook
 
 
 def reformat_input(image):
-    if type(image) == str:
+    if isinstance(image, str):
         if image.startswith("http://") or image.startswith("https://"):
-            tmp, _ = urlretrieve(image, reporthook=printProgressBar(prefix="Progress:", suffix="Complete", length=50))
+            tmp, _ = urlretrieve(image, reporthook=print_progress_bar(prefix="Progress:", suffix="Complete", length=50))
             img_cv_grey = cv2.imread(tmp, cv2.IMREAD_GRAYSCALE)
             os.remove(tmp)
         else:
             img_cv_grey = cv2.imread(image, cv2.IMREAD_GRAYSCALE)
             image = os.path.expanduser(image)
         img = load_image(image)  # can accept URL
-    elif type(image) == bytes:
+    elif isinstance(image, bytes):
         nparr = np.frombuffer(image, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img_cv_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    elif type(image) == np.ndarray:
+    elif isinstance(image, np.ndarray):
         if len(image.shape) == 2:  # grayscale
             img_cv_grey = image
             img = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
@@ -788,7 +798,7 @@ def reformat_input(image):
             img = image[:, :, :3]
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             img_cv_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    elif type(image) == JpegImagePlugin.JpegImageFile:
+    elif isinstance(image, JpegImagePlugin.JpegImageFile):
         image_array = np.array(image)
         img = cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)
         img_cv_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -829,14 +839,14 @@ def reformat_input_batched(image, n_width=None, n_height=None):
     return img, img_cv_grey
 
 
-def make_rotated_img_list(rotationInfo, img_list):
+def make_rotated_img_list(rotation_info, img_list):
 
     result_img_list = img_list[:]
 
     # add rotated images to original image_list
     max_ratio = 1
 
-    for angle in rotationInfo:
+    for angle in rotation_info:
         for img_info in img_list:
             rotated = ndimage.rotate(img_info[1], angle, reshape=True)
             height, width = rotated.shape

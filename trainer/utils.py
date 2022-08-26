@@ -16,11 +16,11 @@ class BeamEntry:
     "information about one single beam at specific time-step"
 
     def __init__(self):
-        self.prTotal = 0  # blank and non-blank
-        self.prNonBlank = 0  # non-blank
-        self.prBlank = 0  # blank
-        self.prText = 1  # LM score
-        self.lmApplied = False  # flag if LM was already applied to this beam
+        self.pr_total = 0  # blank and non-blank
+        self.pr_non_blank = 0  # non-blank
+        self.pr_blank = 0  # blank
+        self.pr_text = 1  # LM score
+        self.lm_applied = False  # flag if LM was already applied to this beam
         self.labeling = ()  # beam-labeling
 
 
@@ -33,20 +33,20 @@ class BeamState:
     def norm(self):
         "length-normalise LM score"
         for (k, _) in self.entries.items():
-            labelingLen = len(self.entries[k].labeling)
-            self.entries[k].prText = self.entries[k].prText ** (1.0 / (labelingLen if labelingLen else 1.0))
+            labeling_len = len(self.entries[k].labeling)
+            self.entries[k].pr_text = self.entries[k].pr_text ** (1.0 / (labeling_len if labeling_len else 1.0))
 
     def sort(self):
         "return beam-labelings, sorted by probability"
         beams = [v for (_, v) in self.entries.items()]
-        sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal * x.prText)
-        return [x.labeling for x in sortedBeams]
+        sorted_beams = sorted(beams, reverse=True, key=lambda x: x.pr_total * x.pr_text)
+        return [x.labeling for x in sorted_beams]
 
     def wordsearch(self, classes, ignore_idx, beam_width, dict_list):
         beams = [v for (_, v) in self.entries.items()]
-        sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal * x.prText)[:beam_width]
+        sorted_beams = sorted(beams, reverse=True, key=lambda x: x.pr_total * x.pr_text)[:beam_width]
 
-        for j, candidate in enumerate(sortedBeams):
+        for j, candidate in enumerate(sorted_beams):
             idx_list = candidate.labeling
             text = ""
             for i, l in enumerate(idx_list):
@@ -66,91 +66,91 @@ class BeamState:
         return best_text
 
 
-def applyLM(parentBeam, childBeam, classes, lm):
+def apply_lm(parent_beam, child_beam, classes, lm):
     "calculate LM score of child beam by taking score from parent beam and bigram probability of last two chars"
-    if lm and not childBeam.lmApplied:
-        c1 = classes[parentBeam.labeling[-1] if parentBeam.labeling else classes.index(" ")]  # first char
-        c2 = classes[childBeam.labeling[-1]]  # second char
-        lmFactor = 0.01  # influence of language model
-        bigramProb = lm.getCharBigram(c1, c2) ** lmFactor  # probability of seeing first and second char next to each other
-        childBeam.prText = parentBeam.prText * bigramProb  # probability of char sequence
-        childBeam.lmApplied = True  # only apply LM once per beam entry
+    if lm and not child_beam.lm_applied:
+        classe_1 = classes[parent_beam.labeling[-1] if parent_beam.labeling else classes.index(" ")]  # first char
+        classe_2 = classes[child_beam.labeling[-1]]  # second char
+        lang_model_factor = 0.01  # influence of language model
+        bigram_prob = lm.getCharBigram(classe_1, classe_2) ** lang_model_factor  # probability of seeing first and second char next to each other
+        child_beam.pr_text = parent_beam.pr_text * bigram_prob  # probability of char sequence
+        child_beam.lm_applied = True  # only apply LM once per beam entry
 
 
-def addBeam(beamState, labeling):
+def add_beam(beam_state, labeling):
     "add beam if it does not yet exist"
-    if labeling not in beamState.entries:
-        beamState.entries[labeling] = BeamEntry()
+    if labeling not in beam_state.entries:
+        beam_state.entries[labeling] = BeamEntry()
 
 
-def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
+def ctc_beam_search(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
     "beam search as described by the paper of Hwang et al. and the paper of Graves et al."
 
-    # blankIdx = len(classes)
-    blankIdx = 0
-    maxT, maxC = mat.shape
+    # blank_idx = len(classes)
+    blank_idx = 0
+    max_t, max_c = mat.shape
 
     # initialise beam state
     last = BeamState()
     labeling = ()
     last.entries[labeling] = BeamEntry()
-    last.entries[labeling].prBlank = 1
-    last.entries[labeling].prTotal = 1
+    last.entries[labeling].pr_blank = 1
+    last.entries[labeling].pr_total = 1
 
     # go over all time-steps
-    for t in range(maxT):
+    for t in range(max_t):
         curr = BeamState()
 
         # get beam-labelings of best beams
-        bestLabelings = last.sort()[0:beam_width]
+        best_labelings = last.sort()[0:beam_width]
 
         # go over best beams
-        for labeling in bestLabelings:
+        for labeling in best_labelings:
 
             # probability of paths ending with a non-blank
-            prNonBlank = 0
+            pr_non_blank = 0
             # in case of non-empty beam
             if labeling:
                 # probability of paths with repeated last char at the end
-                prNonBlank = last.entries[labeling].prNonBlank * mat[t, labeling[-1]]
+                pr_non_blank = last.entries[labeling].pr_non_blank * mat[t, labeling[-1]]
 
             # probability of paths ending with a blank
-            prBlank = (last.entries[labeling].prTotal) * mat[t, blankIdx]
+            pr_blank = (last.entries[labeling].pr_total) * mat[t, blank_idx]
 
             # add beam at current time-step if needed
-            addBeam(curr, labeling)
+            add_beam(curr, labeling)
 
             # fill in data
             curr.entries[labeling].labeling = labeling
-            curr.entries[labeling].prNonBlank += prNonBlank
-            curr.entries[labeling].prBlank += prBlank
-            curr.entries[labeling].prTotal += prBlank + prNonBlank
-            curr.entries[labeling].prText = last.entries[
+            curr.entries[labeling].pr_non_blank += pr_non_blank
+            curr.entries[labeling].pr_blank += pr_blank
+            curr.entries[labeling].pr_total += pr_blank + pr_non_blank
+            curr.entries[labeling].pr_text = last.entries[
                 labeling
-            ].prText  # beam-labeling not changed, therefore also LM score unchanged from
-            curr.entries[labeling].lmApplied = True  # LM already applied at previous time-step for this beam-labeling
+            ].pr_text  # beam-labeling not changed, therefore also LM score unchanged from
+            curr.entries[labeling].lm_applied = True  # LM already applied at previous time-step for this beam-labeling
 
             # extend current beam-labeling
-            for c in range(maxC - 1):
+            for c in range(max_c - 1):
                 # add new char to current beam-labeling
-                newLabeling = labeling + (c,)
+                new_labeling = labeling + (c,)
 
                 # if new labeling contains duplicate char at the end, only consider paths ending with a blank
                 if labeling and labeling[-1] == c:
-                    prNonBlank = mat[t, c] * last.entries[labeling].prBlank
+                    pr_non_blank = mat[t, c] * last.entries[labeling].pr_blank
                 else:
-                    prNonBlank = mat[t, c] * last.entries[labeling].prTotal
+                    pr_non_blank = mat[t, c] * last.entries[labeling].pr_total
 
                 # add beam at current time-step if needed
-                addBeam(curr, newLabeling)
+                add_beam(curr, new_labeling)
 
                 # fill in data
-                curr.entries[newLabeling].labeling = newLabeling
-                curr.entries[newLabeling].prNonBlank += prNonBlank
-                curr.entries[newLabeling].prTotal += prNonBlank
+                curr.entries[new_labeling].labeling = new_labeling
+                curr.entries[new_labeling].pr_non_blank += pr_non_blank
+                curr.entries[new_labeling].pr_total += pr_non_blank
 
                 # apply LM
-                # applyLM(curr.entries[labeling], curr.entries[newLabeling], classes, lm)
+                # apply_lm(curr.entries[labeling], curr.entries[new_labeling], classes, lm)
 
         # set new beam state
         last = curr
@@ -159,20 +159,20 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
     last.norm()
 
     # sort by probability
-    # bestLabeling = last.sort()[0] # get most probable labeling
+    # best_labeling = last.sort()[0] # get most probable labeling
 
     # map labels to chars
     # res = ''
-    # for idx,l in enumerate(bestLabeling):
-    #    if l not in ignore_idx and (not (idx > 0 and bestLabeling[idx - 1] == bestLabeling[idx])):  # removing repeated characters and blank.
+    # for idx,l in enumerate(best_labeling):
+    #    if l not in ignore_idx and (not (idx > 0 and best_labeling[idx - 1] == best_labeling[idx])):  # removing repeated characters and blank.
     #        res += classes[l]
 
     if dict_list == []:
-        bestLabeling = last.sort()[0]  # get most probable labeling
+        best_labeling = last.sort()[0]  # get most probable labeling
         res = ""
-        for i, l in enumerate(bestLabeling):
+        for i, l in enumerate(best_labeling):
             if l not in ignore_idx and (
-                not (i > 0 and bestLabeling[i - 1] == bestLabeling[i])
+                not (i > 0 and best_labeling[i - 1] == best_labeling[i])
             ):  # removing repeated characters and blank.
                 res += classes[l]
     else:
@@ -303,7 +303,7 @@ class CTCLabelConverter(object):
         texts = []
 
         for i in range(mat.shape[0]):
-            t = ctcBeamSearch(mat[i], self.character, self.ignore_idx, None, beam_width=beam_width)
+            t = ctc_beam_search(mat[i], self.character, self.ignore_idx, None, beam_width=beam_width)
             texts.append(t)
         return texts
 
@@ -319,7 +319,7 @@ class CTCLabelConverter(object):
                     dict_list = []
                 else:
                     dict_list = self.dict_list[word[0]]
-                t = ctcBeamSearch(matrix, self.character, self.ignore_idx, None, beam_width=beam_width, dict_list=dict_list)
+                t = ctc_beam_search(matrix, self.character, self.ignore_idx, None, beam_width=beam_width, dict_list=dict_list)
                 string += t
             texts.append(string)
         return texts
