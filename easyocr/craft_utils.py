@@ -56,9 +56,9 @@ def get_det_boxes_core(textmap, linkmap, text_threshold, link_threshold, low_tex
             mapper.append(k)
         segmap[np.logical_and(link_score == 1, text_score == 0)] = 0  # remove link area
         x, y = stats[k, cv2.CC_STAT_LEFT], stats[k, cv2.CC_STAT_TOP]
-        w, h = stats[k, cv2.CC_STAT_WIDTH], stats[k, cv2.CC_STAT_HEIGHT]
-        niter = int(math.sqrt(size * min(w, h) / (w * h)) * 2)
-        sx, ex, sy, ey = x - niter, x + w + niter + 1, y - niter, y + h + niter + 1
+        width, height = stats[k, cv2.CC_STAT_WIDTH], stats[k, cv2.CC_STAT_HEIGHT]
+        niter = int(math.sqrt(size * min(width, height) / (width * height)) * 2)
+        sx, ex, sy, ey = x - niter, x + width + niter + 1, y - niter, y + height + niter + 1
         # boundary check
         if sx < 0:
             sx = 0
@@ -77,8 +77,8 @@ def get_det_boxes_core(textmap, linkmap, text_threshold, link_threshold, low_tex
         box = cv2.boxPoints(rectangle)
 
         # align diamond-shape
-        w, h = np.linalg.norm(box[0] - box[1]), np.linalg.norm(box[1] - box[2])
-        box_ratio = max(w, h) / (min(w, h) + 1e-5)
+        width, height = np.linalg.norm(box[0] - box[1]), np.linalg.norm(box[1] - box[2])
+        box_ratio = max(width, height) / (min(width, height) + 1e-5)
         if abs(1 - box_ratio) <= 0.1:
             l, r = min(np_contours[:, 0]), max(np_contours[:, 0])
             t, b = min(np_contours[:, 1]), max(np_contours[:, 1])
@@ -104,17 +104,17 @@ def get_poly_core(boxes, labels, mapper, linkmap, verbose=False):
     step_r = 0.2
 
     polys = []
-    for k, box in enumerate(boxes):
+    for n_box, box in enumerate(boxes):
         # size filter for small instance
-        w, h = int(np.linalg.norm(box[0] - box[1]) + 1), int(np.linalg.norm(box[1] - box[2]) + 1)
-        if w < 10 or h < 10:
+        width, height = int(np.linalg.norm(box[0] - box[1]) + 1), int(np.linalg.norm(box[1] - box[2]) + 1)
+        if width < 10 or height < 10:
             polys.append(None)
             continue
 
         # warp image
-        tar = np.float32([[0, 0], [w, 0], [w, h], [0, h]])
+        tar = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
         mat = cv2.getPerspectiveTransform(box, tar)
-        word_label = cv2.warpPerspective(labels, mat, (w, h), flags=cv2.INTER_NEAREST)
+        word_label = cv2.warpPerspective(labels, mat, (width, height), flags=cv2.INTER_NEAREST)
         try:
             inv_mat = np.linalg.inv(mat)
         except Exception as err:
@@ -124,7 +124,7 @@ def get_poly_core(boxes, labels, mapper, linkmap, verbose=False):
             continue
 
         # binarization for selected label
-        cur_label = mapper[k]
+        cur_label = mapper[n_box]
         word_label[word_label != cur_label] = 0
         word_label[word_label > 0] = 1
 
@@ -132,7 +132,7 @@ def get_poly_core(boxes, labels, mapper, linkmap, verbose=False):
         # find top/bottom contours
         contours = []
         max_len = -1
-        for i in range(w):
+        for i in range(width):
             region = np.where(word_label[:, i] != 0)[0]
             if len(region) < 2:
                 continue
@@ -142,13 +142,13 @@ def get_poly_core(boxes, labels, mapper, linkmap, verbose=False):
                 max_len = length
 
         # pass if max_len is similar to h
-        if h * max_len_ratio < max_len:
+        if height * max_len_ratio < max_len:
             polys.append(None)
             continue
 
         # get pivot points with fixed length
         tot_seg = num_cp * 2 + 1
-        seg_w = w / tot_seg  # segment width
+        seg_w = width / tot_seg  # segment width
         pp = [None] * num_cp  # init pivot points
         cp_section = [[0, 0]] * tot_seg
         seg_height = [0] * num_cp

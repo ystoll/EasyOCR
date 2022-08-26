@@ -111,8 +111,8 @@ class BeamState:
         for j, candidate in enumerate(sorted_beams):
             idx_list = candidate.labeling
             text = ""
-            for i, label in enumerate(idx_list):
-                if label not in ignore_idx and (not (i > 0 and idx_list[i - 1] == idx_list[i])):
+            for n_label, label in enumerate(idx_list):
+                if label not in ignore_idx and (not (n_label > 0 and idx_list[n_label - 1] == idx_list[n_label])):
                     text += classes[label]
 
             if j == 0:
@@ -157,41 +157,43 @@ def simplify_label(labeling, blank_idx=0):
     return tuple(labeling)
 
 
-def fast_simplify_label(labeling, c, blank_idx=0):
+def fast_simplify_label(labeling,  # tuple of int.
+                        char_label,  # c: int, char label.
+                        blank_idx=0):
 
     # Adding BlankIDX after Non-Blank IDX
-    if labeling and c == blank_idx and labeling[-1] != blank_idx:
-        new_labeling = labeling + (c,)
+    if labeling and char_label == blank_idx and labeling[-1] != blank_idx:
+        new_labeling = labeling + (char_label,)
 
     # Case when a nonBlankChar is added after BlankChar |len(char) - 1
-    elif labeling and c != blank_idx and labeling[-1] == blank_idx:
+    elif labeling and char_label != blank_idx and labeling[-1] == blank_idx:
 
         # If Blank between same character do nothing | As done by Simplify label
-        if labeling[-2] == c:
-            new_labeling = labeling + (c,)
+        if labeling[-2] == char_label:
+            new_labeling = labeling + (char_label,)
 
         # if blank between different character, remove it | As done by Simplify Label
         else:
-            new_labeling = labeling[:-1] + (c,)
+            new_labeling = labeling[:-1] + (char_label,)
 
     # if consecutive blanks : Keep the original label
-    elif labeling and c == blank_idx and labeling[-1] == blank_idx:
+    elif labeling and char_label == blank_idx and labeling[-1] == blank_idx:
         new_labeling = labeling
 
     # if empty beam & first index is blank
-    elif not labeling and c == blank_idx:
+    elif not labeling and char_label == blank_idx:
         new_labeling = labeling
 
     # if empty beam & first index is non-blank
-    elif not labeling and c != blank_idx:
-        new_labeling = labeling + (c,)
+    elif not labeling and char_label != blank_idx:
+        new_labeling = labeling + (char_label,)
 
-    elif labeling and c != blank_idx:
-        new_labeling = labeling + (c,)
+    elif labeling and char_label != blank_idx:
+        new_labeling = labeling + (char_label,)
 
     # Cases that might still require simplyfying
     else:
-        new_labeling = labeling + (c,)
+        new_labeling = labeling + (char_label,)
         new_labeling = simplify_label(new_labeling, blank_idx)
 
     return new_labeling
@@ -295,10 +297,10 @@ def ctc_beam_search(mat,
     if dict_list == []:
         best_labeling = last.sort()[0]  # get most probable labeling
         res = ""
-        for i, l in enumerate(best_labeling):
+        for n_label, label in enumerate(best_labeling):
             # removing repeated characters and blank.
-            if l not in ignore_idx and (not (i > 0 and best_labeling[i - 1] == best_labeling[i])):
-                res += classes[l]
+            if label not in ignore_idx and (not (n_label > 0 and best_labeling[n_label - 1] == best_labeling[n_label])):
+                res += classes[label]
     else:
         res = last.wordsearch(classes, ignore_idx, 20, dict_list)
     return res
@@ -312,8 +314,8 @@ class CTCLabelConverter(object):
         dict_character = list(character)
 
         self.dict = {}
-        for i, char in enumerate(dict_character):
-            self.dict[char] = i + 1
+        for n_char, char in enumerate(dict_character):
+            self.dict[char] = n_char + 1
 
         self.character = ["[blank]"] + dict_character  # dummy '[blank]' token for CTCLoss (index 0)
 
@@ -376,29 +378,39 @@ class CTCLabelConverter(object):
         texts = []
         index = 0
         for length in length_tensor:
-            t = text_index[index : index + length]  # list of indexes.
-
+            bb_text_indexes = text_index[index : index + length]  # list of indexes (np.ndarray)
             # Returns a boolean array where true is when the value is not repeated
-            a = np.insert(~((t[1:] == t[:-1])), 0, True)
+            array_not_repeated = np.insert(~((bb_text_indexes[1:] == bb_text_indexes[:-1])), 0, True)
             # Returns a boolean array where true is when the value is not in the ignore_idx list
-            b = ~np.isin(t, np.array(self.ignore_idx))
+            array_not_ignore_idx = ~np.isin(bb_text_indexes, np.array(self.ignore_idx))
             # Combine the two boolean array
-            c = a & b
+            array_combined = array_not_repeated & array_not_ignore_idx
             # Gets the corresponding character according to the saved indexes
-            text = "".join(np.array(self.character)[t[c.nonzero()]])
+
+            text = "".join(np.array(self.character)[bb_text_indexes[array_combined.nonzero()]])
             texts.append(text)
             index += length
         return texts
 
     def decode_beamsearch(self, mat, beam_width=5):
+        """Decode mat prop to the text corresponding to the given bounding box.
+
+        Args:
+            mat (np.ndarray): np.ndarray, shape=(batch_size, ?, num_classes) : num_classes=len(self.character)
+            beam_width (int, optional): width of the beam. Defaults to 5.
+
+        Returns:
+            _type_: _description_
+        """
         texts = []
         for i in range(mat.shape[0]):
-            t = ctc_beam_search(mat[i],
-                                self.character,  # classes = self.character.
-                                self.ignore_idx,
-                                None,
-                                beam_width=beam_width)
-            texts.append(t)
+            text = ctc_beam_search(mat[i],
+                                   self.character,  # classes = self.character.
+                                   self.ignore_idx,
+                                   None, # lm = None
+                                   beam_width=beam_width,
+                                   dict_list=None)
+            texts.append(text)
         return texts
 
     def decode_wordbeamsearch(self, mat, beam_width=5):
