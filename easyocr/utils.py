@@ -5,6 +5,7 @@ import math
 import os
 # import pickle
 import sys
+from types import MappingProxyType
 from zipfile import ZipFile
 
 import cv2
@@ -32,7 +33,12 @@ def consecutive(data, mode="first", stepsize=1):
     return result
 
 
-def word_segmentation(mat, separator_idx={"th": [1, 2], "en": [3, 4]}, separator_idx_list=[1, 2, 3, 4]):
+def word_segmentation(mat,
+                      separator_idx=MappingProxyType({"th": (1, 2), "en": (3, 4)}),
+                      separator_idx_list=(1, 2, 3, 4)):
+    # Yannick
+    print("Coucou")
+    input()
     result = []
     sep_list = []
     start_idx = 0
@@ -90,9 +96,9 @@ class BeamState:
 
     def norm(self):
         "length-normalise LM score"
-        for (k, _) in self.entries.items():
-            labeling_len = len(self.entries[k].labeling)
-            self.entries[k].pr_text = self.entries[k].pr_text ** (1.0 / (labeling_len if labeling_len else 1.0))
+        for (entry_key, _) in self.entries.items():
+            labeling_len = len(self.entries[entry_key].labeling)
+            self.entries[entry_key].pr_text = self.entries[entry_key].pr_text ** (1.0 / (labeling_len if labeling_len else 1.0))
 
     def sort(self):
         "return beam-labelings, sorted by probability"
@@ -108,14 +114,14 @@ class BeamState:
         if len(sorted_beams) > max_candidate:
             sorted_beams = sorted_beams[:max_candidate]
 
-        for j, candidate in enumerate(sorted_beams):
+        for index_candidate, candidate in enumerate(sorted_beams):
             idx_list = candidate.labeling
             text = ""
             for n_label, label in enumerate(idx_list):
                 if label not in ignore_idx and (not (n_label > 0 and idx_list[n_label - 1] == idx_list[n_label])):
                     text += classes[label]
 
-            if j == 0:
+            if index_candidate == 0:
                 best_text = text
             if text in dict_list:
                # print('found text: ', text)
@@ -403,8 +409,8 @@ class CTCLabelConverter(object):
             _type_: _description_
         """
         texts = []
-        for i in range(mat.shape[0]):
-            text = ctc_beam_search(mat[i],
+        for row_index in range(mat.shape[0]):
+            text = ctc_beam_search(mat[row_index],
                                    self.character,  # classes = self.character.
                                    self.ignore_idx,
                                    None, # lm = None
@@ -417,46 +423,45 @@ class CTCLabelConverter(object):
         texts = []
         argmax = np.argmax(mat, axis=2)
 
-        for i in range(mat.shape[0]):
+        for row_index in range(mat.shape[0]):
             string = ""
             # without separators - use space as separator
             if len(self.separator_list) == 0:
                 space_idx = self.dict[" "]
 
-                data = np.argwhere(argmax[i] != space_idx).flatten()
-                group = np.split(data, np.where(np.diff(data) != 1)[0] + 1)
-                group = [list(item) for item in group if len(item) > 0]
-
-                for j, list_idx in enumerate(group):
-                    matrix = mat[i, list_idx, :]
-                    t = ctc_beam_search(matrix,
-                                      self.character,
-                                      self.ignore_idx,
-                                      None,  # lang_model is None
-                                      beam_width=beam_width,
-                                      dict_list=self.dict_list)
-                    if j == 0:
-                        string += t
+                data = np.argwhere(argmax[row_index] != space_idx).flatten()
+                groups = np.split(data, np.where(np.diff(data) != 1)[0] + 1)
+                groups = [list(item) for item in groups if len(item) > 0]
+                for group_index, list_idx in enumerate(groups):
+                    matrix = mat[row_index, list_idx, :]
+                    text = ctc_beam_search(matrix,
+                                           self.character,
+                                           self.ignore_idx,
+                                           None,  # lang_model is None
+                                           beam_width=beam_width,
+                                           dict_list=self.dict_list)
+                    if group_index == 0:
+                        string += text
                     else:
-                        string += " " + t
+                        string += " " + text
 
             # with separators
             else:
-                words = word_segmentation(argmax[i])
+                words = word_segmentation(argmax[row_index])
 
                 for word in words:
-                    matrix = mat[i, word[1][0] : word[1][1] + 1, :]
+                    matrix = mat[row_index, word[1][0] : word[1][1] + 1, :]
                     if word[0] == "":
                         dict_list = []
                     else:
                         dict_list = self.dict_list[word[0]]
-                    t = ctc_beam_search(matrix,
+                    text = ctc_beam_search(matrix,
                                       self.character,
                                       self.ignore_idx,
                                       None,  # lang_model is None
                                       beam_width=beam_width,
                                       dict_list=dict_list)
-                    string += t
+                    string += text
             texts.append(string)
         return texts
 
@@ -677,8 +682,8 @@ def download_and_unzip(url, filename, model_storage_directory, verbose=True):
 
 def calculate_md5(fname):
     hash_md5 = hashlib.md5()
-    with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
+    with open(fname, "rb") as file_:
+        for chunk in iter(lambda: file_.read(4096), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 

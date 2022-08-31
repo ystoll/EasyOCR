@@ -1,6 +1,8 @@
-import torch
 import pickle
+from types import MappingProxyType
+
 import numpy as np
+import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,9 +34,9 @@ class BeamState:
 
     def norm(self):
         "length-normalise LM score"
-        for (k, _) in self.entries.items():
-            labeling_len = len(self.entries[k].labeling)
-            self.entries[k].pr_text = self.entries[k].pr_text ** (1.0 / (labeling_len if labeling_len else 1.0))
+        for (entry_key, _) in self.entries.items():
+            labeling_len = len(self.entries[entry_key].labeling)
+            self.entries[entry_key].pr_text = self.entries[entry_key].pr_text ** (1.0 / (labeling_len if labeling_len else 1.0))
 
     def sort(self):
         "return beam-labelings, sorted by probability"
@@ -46,16 +48,14 @@ class BeamState:
         beams = [v for (_, v) in self.entries.items()]
         sorted_beams = sorted(beams, reverse=True, key=lambda x: x.pr_total * x.pr_text)[:beam_width]
 
-        for j, candidate in enumerate(sorted_beams):
+        for index_candidate, candidate in enumerate(sorted_beams):
             idx_list = candidate.labeling
             text = ""
             for i, l in enumerate(idx_list):
-                if l not in ignore_idx and (
-                    not (i > 0 and idx_list[i - 1] == idx_list[i])
-                ):  # removing repeated characters and blank.
+                if l not in ignore_idx and (not (i > 0 and idx_list[i - 1] == idx_list[i])):  # removing repeated characters and blank.
                     text += classes[l]
 
-            if j == 0:
+            if index_candidate == 0:
                 best_text = text
             if text in dict_list:
                 print("found text: ", text)
@@ -66,13 +66,13 @@ class BeamState:
         return best_text
 
 
-def apply_lm(parent_beam, child_beam, classes, lm):
+def apply_lm(parent_beam, child_beam, classes, lang_model):
     "calculate LM score of child beam by taking score from parent beam and bigram probability of last two chars"
-    if lm and not child_beam.lm_applied:
+    if lang_model and not child_beam.lm_applied:
         classe_1 = classes[parent_beam.labeling[-1] if parent_beam.labeling else classes.index(" ")]  # first char
         classe_2 = classes[child_beam.labeling[-1]]  # second char
         lang_model_factor = 0.01  # influence of language model
-        bigram_prob = lm.getCharBigram(classe_1, classe_2) ** lang_model_factor  # probability of seeing first and second char next to each other
+        bigram_prob = lang_model.getCharBigram(classe_1, classe_2) ** lang_model_factor  # probability of seeing first and second char next to each other
         child_beam.pr_text = parent_beam.pr_text * bigram_prob  # probability of char sequence
         child_beam.lm_applied = True  # only apply LM once per beam entry
 
@@ -83,8 +83,15 @@ def add_beam(beam_state, labeling):
         beam_state.entries[labeling] = BeamEntry()
 
 
-def ctc_beam_search(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
+def ctc_beam_search(mat,
+                    classes,
+                    ignore_idx,
+                    lang_model,
+                    beam_width=25,
+                    dict_list=None):
     "beam search as described by the paper of Hwang et al. and the paper of Graves et al."
+    if dict_list is None:
+        dict_list = []
 
     # blank_idx = len(classes)
     blank_idx = 0
@@ -150,7 +157,7 @@ def ctc_beam_search(mat, classes, ignore_idx, lm, beam_width=25, dict_list=[]):
                 curr.entries[new_labeling].pr_total += pr_non_blank
 
                 # apply LM
-                # apply_lm(curr.entries[labeling], curr.entries[new_labeling], classes, lm)
+                # apply_lm(curr.entries[labeling], curr.entries[new_labeling], classes, lang_model)
 
         # set new beam state
         last = curr
@@ -195,7 +202,9 @@ def consecutive(data, mode="first", stepsize=1):
     return result
 
 
-def word_segmentation(mat, separator_idx={"th": [1, 2], "en": [3, 4]}, separator_idx_list=[1, 2, 3, 4]):
+def word_segmentation(mat,
+                      separator_idx=MappingProxyType({"th": (1, 2), "en": (3, 4)}),
+                      separator_idx_list=(1, 2, 3, 4)):
     result = []
     sep_list = []
     start_idx = 0
@@ -233,7 +242,11 @@ class CTCLabelConverter(object):
     """Convert between text-label and text-index"""
 
     # def __init__(self, character, separator = []):
-    def __init__(self, character, separator_list={}, dict_pathlist={}):
+    def __init__(self, character, separator_list=None, dict_pathlist=None):
+        if separator_list is None:
+            separator_list = {}
+        if dict_pathlist is None:
+            dict_pathlist = {}
         # character (str): set of the possible characters.
         dict_character = list(character)
 
@@ -242,9 +255,9 @@ class CTCLabelConverter(object):
 
         self.dict = {}
         # for i, char in enumerate(self.separator_char + dict_character):
-        for i, char in enumerate(dict_character):
+        for char_index, char in enumerate(dict_character):
             # NOTE: 0 is reserved for 'blank' token required by CTCLoss
-            self.dict[char] = i + 1
+            self.dict[char] = char_index + 1
 
         self.character = ["[blank]"] + dict_character  # dummy '[blank]' token for CTCLoss (index 0)
         # self.character = ['[blank]']+ self.separator_char + dict_character  # dummy '[blank]' token for CTCLoss (index 0)
@@ -288,9 +301,7 @@ class CTCLabelConverter(object):
 
             char_list = []
             for i in range(l):
-                if t[i] not in self.ignore_idx and (
-                    not (i > 0 and t[i - 1] == t[i])
-                ):  # removing repeated characters and blank (and separator).
+                if t[i] not in self.ignore_idx and (not (i > 0 and t[i - 1] == t[i])):  # removing repeated characters and blank (and separator).
                     # if (t[i] != 0) and (not (i > 0 and t[i - 1] == t[i])):  # removing repeated characters and blank (and separator).
                     char_list.append(self.character[t[i]])
             text = "".join(char_list)
@@ -302,25 +313,25 @@ class CTCLabelConverter(object):
     def decode_beamsearch(self, mat, beam_width=5):
         texts = []
 
-        for i in range(mat.shape[0]):
-            t = ctc_beam_search(mat[i], self.character, self.ignore_idx, None, beam_width=beam_width)
-            texts.append(t)
+        for row_index in range(mat.shape[0]):
+            text = ctc_beam_search(mat[row_index], self.character, self.ignore_idx, None, beam_width=beam_width)
+            texts.append(text)
         return texts
 
     def decode_wordbeamsearch(self, mat, beam_width=5):
         texts = []
         argmax = np.argmax(mat, axis=2)
-        for i in range(mat.shape[0]):
-            words = word_segmentation(argmax[i])
+        for row_index in range(mat.shape[0]):
+            words = word_segmentation(argmax[row_index])
             string = ""
             for word in words:
-                matrix = mat[i, word[1][0] : word[1][1] + 1, :]
+                matrix = mat[row_index, word[1][0] : word[1][1] + 1, :]
                 if word[0] == "":
                     dict_list = []
                 else:
                     dict_list = self.dict_list[word[0]]
-                t = ctc_beam_search(matrix, self.character, self.ignore_idx, None, beam_width=beam_width, dict_list=dict_list)
-                string += t
+                text = ctc_beam_search(matrix, self.character, self.ignore_idx, None, beam_width=beam_width, dict_list=dict_list)
+                string += text
             texts.append(string)
         return texts
 
@@ -336,9 +347,9 @@ class AttnLabelConverter(object):
         self.character = list_token + list_character
 
         self.dict = {}
-        for i, char in enumerate(self.character):
+        for char_index, char in enumerate(self.character):
             # print(i, char)
-            self.dict[char] = i
+            self.dict[char] = char_index
 
     def encode(self, text, batch_max_length=25):
         """convert text-label into text-index.
@@ -366,7 +377,7 @@ class AttnLabelConverter(object):
     def decode(self, text_index, length):
         """convert text-index into text-label."""
         texts = []
-        for index, l in enumerate(length):
+        for index, _ in enumerate(length):
             text = "".join([self.character[i] for i in text_index[index, :]])
             texts.append(text)
         return texts
@@ -378,11 +389,11 @@ class Averager(object):
     def __init__(self):
         self.reset()
 
-    def add(self, v):
-        count = v.data.numel()
-        v = v.data.sum()
+    def add(self, value):
+        count = value.data.numel()
+        value = value.data.sum()
         self.n_count += count
-        self.sum += v
+        self.sum += value
 
     def reset(self):
         self.n_count = 0
