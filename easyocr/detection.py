@@ -42,7 +42,8 @@ def test_net(canvas_size,
              image,
              text_threshold,
              link_threshold,
-             low_text, poly,
+             low_text,
+             poly,
              device,
              estimate_num_chars=False):
     """test_net _summary_
