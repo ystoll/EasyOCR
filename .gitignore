@@ -111,5 +111,5 @@ ENV/
 
 # Used to test modifications of easyocr.
 easy_ocr_dev.ipynb
-easy_ocr_dev.py
+# easy_ocr_dev.py
 notes_persos.txt
