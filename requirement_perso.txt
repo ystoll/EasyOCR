@@ -1,5 +1,5 @@
 # torch
---find-links https://download.pytorch.org/whl/torch_stable.html
+#--find-links https://download.pytorch.org/whl/torch_stable.html
 torch==1.12.1+cu113
 torchvision==0.13.1+cu113
 asttokens==2.0.5

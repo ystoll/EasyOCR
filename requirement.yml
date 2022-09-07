@@ -1,0 +1,8 @@
+name: easyocr
+dependencies:
+  - python>=3.8
+  - anaconda
+  - pip
+  - pip:
+    - --find-links https://download.pytorch.org/whl/torch_stable.html
+    - -r requirement_perso.txt
