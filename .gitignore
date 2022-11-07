@@ -114,3 +114,6 @@ easy_ocr_dev.py
 
 # virtual environment:
 .easyocr_venv
+
+# Experiments results
+trainer/saved_models
