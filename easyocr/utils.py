@@ -26,6 +26,7 @@ def consecutive(data, mode ='first', stepsize=1):
     return result
 
 def word_segmentation(mat, separator_idx =  {'th': [1,2],'en': [3,4]}, separator_idx_list = [1,2,3,4]):
+   # ic(mat.shape)
     result = []
     sep_list = []
     start_idx = 0
@@ -54,6 +55,8 @@ def word_segmentation(mat, separator_idx =  {'th': [1,2],'en': [3,4]}, separator
 
     if start_idx <= len(mat)-1:
         result.append( ['', [start_idx, len(mat)-1] ] )
+    #ic(mat)
+    #ic(result)
     return result
 
 # code is based from https://github.com/githubharald/CTCDecoder/blob/master/src/BeamSearch.py
@@ -763,10 +766,10 @@ def make_rotated_img_list(rotationInfo, img_list):
 
     # add rotated images to original image_list
     max_ratio=1
-    
+
     for angle in rotationInfo:
-        for img_info in img_list : 
-            rotated = ndimage.rotate(img_info[1], angle, reshape=True) 
+        for img_info in img_list :
+            rotated = ndimage.rotate(img_info[1], angle, reshape=True)
             height,width = rotated.shape
             ratio = calculate_ratio(width,height)
             max_ratio = max(max_ratio,ratio)
@@ -777,7 +780,7 @@ def make_rotated_img_list(rotationInfo, img_list):
 def set_result_with_confidence(results):
     """ Select highest confidence augmentation for TTA
     Given a list of lists of results (outer list has one list per augmentation,
-    inner lists index the images being recognized), choose the best result 
+    inner lists index the images being recognized), choose the best result
     according to confidence level.
     Each "result" is of the form (box coords, text, confidence)
     A final_result is returned which contains one result for each image
