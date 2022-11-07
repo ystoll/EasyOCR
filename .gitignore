@@ -86,8 +86,7 @@ celerybeat-schedule
 .venv
 venv/
 ENV/
-.easyocr_venv/
-
+.easyocr_venv
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -112,3 +111,10 @@ ENV/
 # Personnal files
 easy_ocr_dev.ipynb
 easy_ocr_dev.py
+notes_persos.txt
+
+# virtual environment:
+.easyocr_venv
+
+# Experiment results
+trainer/saved_models/
