@@ -89,6 +89,7 @@ class BeamState:
         return [x.labeling for x in sortedBeams]
 
     def wordsearch(self, classes, ignore_idx, maxCandidate, dict_list):
+
         beams = [v for (_, v) in self.entries.items()]
         sortedBeams = sorted(beams, reverse=True, key=lambda x: x.prTotal*x.prText)
         if len(sortedBeams) >  maxCandidate: sortedBeams = sortedBeams[:maxCandidate]
@@ -99,7 +100,6 @@ class BeamState:
             for i,l in enumerate(idx_list):
                 if l not in ignore_idx and (not (i > 0 and idx_list[i - 1] == idx_list[i])):
                     text += classes[l]
-
             if j == 0: best_text = text
             if text in dict_list:
                 #print('found text: ', text)
@@ -269,7 +269,11 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list = []):
             if l not in ignore_idx and (not (i > 0 and bestLabeling[i - 1] == bestLabeling[i])):
                 res += classes[l]
     else:
-        res = last.wordsearch(classes, ignore_idx, 20, dict_list)
+        maxCandidate=20
+        res = last.wordsearch(classes=classes,
+                              ignore_idx=ignore_idx,
+                              maxCandidate=maxCandidate,
+                              dict_list=dict_list)
     return res
 
 
