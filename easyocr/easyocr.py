@@ -90,7 +90,12 @@ class Reader(object):
             detector_path = self.getDetectorPath(detect_network)
 
         # recognition model
-        separator_list = {"blank": " "}
+        # In the original codebase, separator_list is left empty:
+        separator_list = {}
+        # We can fill it with some separators in order to test word_segmentation()
+        # and its subsequent functions.
+        # separator_list = {"blank": " "}
+
 
         if recog_network in ['standard'] + [model for model in recognition_models['gen1']] + [model for model in recognition_models['gen2']]:
             if recog_network in [model for model in recognition_models['gen1']]:
