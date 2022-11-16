@@ -1,4 +1,3 @@
-# def word_segmentation(mat, separator_idx =  {'th': [1,2],'en': [3,4]}, separator_idx_list = [1,2,3,4]):
 test_1:
   input:
     mat:

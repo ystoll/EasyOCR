@@ -1,8 +1,6 @@
-import pickle
-
-import icecream as ic
-import numpy as np
 import pytest
+import numpy as np
+
 
 from easyocr.utils import (BeamEntry, BeamState, addBeam, consecutive,
                            ctcBeamSearch, word_segmentation)
@@ -16,7 +14,7 @@ def load_fr_dict():
 
 @pytest.fixture
 def load_mat_probs_mairie():
-    out_pickle = "tests/golden_utils/data/mat_proba_Mairie.csv"
+    out_pickle = "tests/data/test_easyocr_utils/data/mat_proba_Mairie.csv"
     return np.genfromtxt(out_pickle, delimiter=',')
 
 
@@ -31,17 +29,16 @@ def test_consecutive():
     mode="first"
     assert consecutive(data=data, mode=mode, stepsize=1) == [28, 40, 50]
 
-# "Golden": inputs are read in Yaml file, except for dict or matrices
-# which are either read from txt file (dict) or unpickle (matrice)
+# "Golden": inputs are read in Yaml files, except for dict or matrices
+# which are either read from txt file (dicts) or csv files (matrices).
 
-@pytest.mark.golden_test("golden_utils/test_word_segmentation.yaml")
+@pytest.mark.golden_test("data/test_easyocr_utils/test_word_segmentation.yaml")
 @pytest.mark.parametrize("test", ["test_1", "test_2", "test_3"])
-# @pytest.mark.parametrize("test", ["test_2"])
 def test_word_segmentation(golden, test):
     assert word_segmentation(**golden[test]["input"]) == golden.out[test]["output"]
 
 
-@pytest.mark.golden_test("golden_utils/test_ctcBeamSearch.yaml")
+@pytest.mark.golden_test("data/test_easyocr_utils/test_ctcBeamSearch.yaml")
 def test_ctcBeamSearch(golden, load_fr_dict, load_mat_probs_mairie):
     fr_dict = load_fr_dict
     mat_probs = load_mat_probs_mairie
@@ -51,6 +48,5 @@ def test_ctcBeamSearch(golden, load_fr_dict, load_mat_probs_mairie):
                            lm=golden["input"]["ignore_idx"],
                            beamWidth=golden["input"]["beamWidth"],
                            dict_list=fr_dict)
-
 
     assert result == golden.out["output"]
