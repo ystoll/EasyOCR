@@ -26,7 +26,6 @@ def consecutive(data, mode ='first', stepsize=1):
     return result
 
 def word_segmentation(mat, separator_idx =  {'th': [1,2],'en': [3,4]}, separator_idx_list = [1,2,3,4]):
-   # ic(mat.shape)
     result = []
     sep_list = []
     start_idx = 0
@@ -55,8 +54,6 @@ def word_segmentation(mat, separator_idx =  {'th': [1,2],'en': [3,4]}, separator
 
     if start_idx <= len(mat)-1:
         result.append( ['', [start_idx, len(mat)-1] ] )
-    #ic(mat)
-    #ic(result)
     return result
 
 # code is based from https://github.com/githubharald/CTCDecoder/blob/master/src/BeamSearch.py
@@ -181,7 +178,22 @@ def addBeam(beamState, labeling):
     if labeling not in beamState.entries:
         beamState.entries[labeling] = BeamEntry()
 
-def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list = []):
+def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list=[]):
+    """_summary_
+
+    Args:
+        mat (ndarray, shape: (num_timesteps, num_classes)):
+            matrix of probabilities: mat[i, j] is the probability of character j at timestep i.
+            The proba 0.0 < mat[i, j ] < 1.0, the probabilities are normed.
+        classes (list): list of all characters to be search for.
+        ignore_idx (list): list of python indexes to be ignored. Useful for specific OCR problems.
+        lm (_type_): language_model, unused here.
+        beamWidth (int, optional): Width of the beam, i.e number of words to be search for simultaneously. Defaults to 25.
+        dict_list (list, optional): List of all words in the target dictionnary. Defaults to [].
+
+    Returns:
+        ress (string): outputted string.
+    """
     blankIdx = 0
     maxT, maxC = mat.shape
 
@@ -368,7 +380,7 @@ class CTCLabelConverter(object):
 
                 data = np.argwhere(argmax[i]!=space_idx).flatten()
                 group = np.split(data, np.where(np.diff(data) != 1)[0]+1)
-                group = [ list(item) for item in group if len(item)>0]
+                group = [list(item) for item in group if len(item)>0]
 
                 for j, list_idx in enumerate(group):
                     matrix = mat[i, list_idx,:]
