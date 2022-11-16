@@ -16,4 +16,7 @@ def test_readtext_simple(reader: Reader, golden: GoldenTestFixture) -> None:
 
     # Run the engine
     output = reader.readtext(img)
+    # Confidence intervals are rounded to the second decimal to avoid reproducibilities issues
+    # between calls.
+    output = list(map(lambda elem:(elem[0], elem[1], round(elem[2], 2)), output))
     assert EasyOCROutput(output) == golden.out["output"]
