@@ -36,7 +36,7 @@ def reader() -> Reader:
 @pytest.fixture(scope="package")
 def reader_dbnet() -> Reader:
     """The DBNet inference engine."""
-    # Initialize the inference engine using sane defaults with DBNet
+    # Initialize the inference engine using same defaults with DBNet
     # as the network
     engine = Reader(lang_list=["en"])
 
