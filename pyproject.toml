@@ -1,6 +1,10 @@
 [tool.pytest.ini_options]
 addopts = "-v -s"
 enable_assertion_pass_hook=true
+# This are depreciation warnings raised by PILLOW.
+# TODO: Adapt the code in order to solve them:
+filterwarnings = ["ignore:.*ANTIALIAS:DeprecationWarning",
+                  "ignore:.*BICUBIC:DeprecationWarning"]
 
 [build-system]
 # AVOID CHANGING REQUIRES: IT WILL BE UPDATED BY PYSCAFFOLD!
