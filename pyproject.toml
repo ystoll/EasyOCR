@@ -1,2 +1,3 @@
 [tool.pytest.ini_options]
 addopts = "-v -s"
+enable_assertion_pass_hook=true
