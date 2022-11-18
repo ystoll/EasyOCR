@@ -1,0 +1,4 @@
+  input:
+    beamWidth: 5
+  output:
+  - 'Mairie'
