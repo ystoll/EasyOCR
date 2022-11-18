@@ -27,7 +27,7 @@ yaml.add_constructor('!EasyOCROutput', lambda loader, node: EasyOCROutput(node.v
 @pytest.fixture(scope="package")
 def reader() -> Reader:
     """The default CRAFT inference engine."""
-    # Initialize the inference engine using sane defaults
+    # Initialize the inference engine using same defaults
     engine = Reader(lang_list=["en"])
 
     return engine
