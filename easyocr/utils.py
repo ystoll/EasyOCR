@@ -17,7 +17,7 @@ if sys.version_info[0] == 2:
 else:
     from urllib.request import urlretrieve
 
-def consecutive(data, mode ='first', stepsize=1):
+def consecutive(data, mode='first', stepsize=1):
     group = np.split(data, np.where(np.diff(data) != stepsize)[0]+1)
     group = [item for item in group if len(item)>0]
 
@@ -31,7 +31,7 @@ def word_segmentation(mat, separator_idx =  {'th': [1,2],'en': [3,4]}, separator
     start_idx = 0
     sep_lang = ''
     for sep_idx in separator_idx_list:
-        if sep_idx % 2 == 0: mode ='first'
+        if sep_idx % 2 == 0: mode = 'first'
         else: mode ='last'
         a = consecutive( np.argwhere(mat == sep_idx).flatten(), mode)
         new_sep = [ [item, sep_idx] for item in a]
@@ -117,7 +117,7 @@ def applyLM(parentBeam, childBeam, classes, lm):
         childBeam.prText = parentBeam.prText * bigramProb # probability of char sequence
         childBeam.lmApplied = True # only apply LM once per beam entry
 
-def simplify_label(labeling, blankIdx = 0):
+def simplify_label(labeling, blankIdx=0):
     labeling = np.array(labeling)
 
     # collapse blank
@@ -247,8 +247,8 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list=[]):
                 # add new char to current beam-labeling
                 # newLabeling = labeling + (c,)
                 # newLabeling = simplify_label(newLabeling, blankIdx)
-                newLabeling = fast_simplify_label(labeling, c, blankIdx)
 
+                newLabeling = fast_simplify_label(labeling, c, blankIdx)
                 # if new labeling contains duplicate char at the end, only consider paths ending with a blank
                 if labeling and labeling[-1] == c:
                     prNonBlank = mat[t, c] * last.entries[prev_labeling].prBlank
@@ -292,7 +292,7 @@ def ctcBeamSearch(mat, classes, ignore_idx, lm, beamWidth=25, dict_list=[]):
 class CTCLabelConverter(object):
     """ Convert between text-label and text-index """
 
-    def __init__(self, character, separator_list = {}, dict_pathlist = {}):
+    def __init__(self, character, separator_list={}, dict_pathlist={}):
         # character (str): set of the possible characters.
         dict_character = list(character)
 
@@ -364,13 +364,17 @@ class CTCLabelConverter(object):
     def decode_beamsearch(self, mat, beamWidth=5):
         texts = []
         for i in range(mat.shape[0]):
-            t = ctcBeamSearch(mat[i], self.character, self.ignore_idx, None, beamWidth=beamWidth)
+            t = ctcBeamSearch(mat[i],
+                              self.character,
+                              self.ignore_idx,
+                              lm=None,
+                              beamWidth=beamWidth)
             texts.append(t)
         return texts
 
     def decode_wordbeamsearch(self, mat, beamWidth=5):
         texts = []
-        argmax = np.argmax(mat, axis = 2)
+        argmax = np.argmax(mat, axis=2)
 
         for i in range(mat.shape[0]):
             string = ''
