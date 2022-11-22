@@ -1,4 +1,8 @@
 [tool.pytest.ini_options]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "serial",
+]
 addopts = "-v -s"
 enable_assertion_pass_hook=true
 # This are depreciation warnings raised by PILLOW.
