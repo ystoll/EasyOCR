@@ -1,4 +1,4 @@
-  input:
-    beamWidth: 5
-  output:
-  - 'Mairie'
+input:
+  beamWidth: 5
+output:
+- Mairie
