@@ -149,20 +149,10 @@ def test_four_points_transform():
     assert isinstance(skew_img_out, np.ndarray)
     assert np.allclose(four_point_transform(skew_img, rect), skew_img_out, rtol=0.014)
 
-# @pytest.mark.golden_test("data/test_easyocr_utils/test_group_text_box.yaml")
-# def test_group_text_box(golden):
-
-#     polys = [np.array(box, dtype=np.int32) for box in golden["input"]["polys_1"]]
-#     result = group_text_box(polys, **golden["input"]["input_1"])
-
-#     assert result == (golden.out["output"]["output_1"][0],  # merged list (horizontal list)
-#                       golden.out["output"]["output_1"][1])  # free list
-
 @pytest.mark.golden_test("data/test_easyocr_utils/test_group_text_box.yaml")
 def test_group_text_box(golden):
 
     polys = [np.array(box, dtype=np.int32) for box in golden["input"]["polys_2"]]
     result = group_text_box(polys, **golden["input"]["input_1"])
 
-    assert result == (golden.out["output"]["output_2"][0],  # merged list (horizontal list)
-                      golden.out["output"]["output_2"][1])  # free list
+    assert result == tuple(golden.out["output"]["output_2"])  # free list
