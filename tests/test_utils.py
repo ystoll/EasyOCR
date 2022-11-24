@@ -7,7 +7,8 @@ from icecream import ic
 
 from easyocr.utils import (BeamEntry, BeamState, addBeam, consecutive,
                            ctcBeamSearch, word_segmentation, simplify_label,
-                           fast_simplify_label, CTCLabelConverter, four_point_transform)
+                           fast_simplify_label, CTCLabelConverter, four_point_transform,
+                           group_text_box)
 
 
 # Fixtures:
@@ -131,17 +132,6 @@ class TestCTCLabelConverter():
                                            np.array(golden["input"]["beamWidth"])) == golden.out["output"]
 
 
-
-# ic| img.shape: (400, 800)
-# ic| type(img): <class 'numpy.ndarray'>
-# ic| rect: array([[396.22183, 154.22183],
-#                  [622.7659 ,  90.35484],
-#                  [645.7782 , 179.77817],
-#                  [419.23404, 244.64516]], dtype=float32)
-# ic| type(transformed_img): <class 'numpy.ndarray'>
-# ic| transformed_img.shape: (93, 235)
-
-
 # transformed_img = four_point_transform(img, rect)
 def test_four_points_transform():
     skew_img_path = "tests/data/test_easyocr_utils/data/skew_text_1_ndarray_400x800.csv"
@@ -158,3 +148,21 @@ def test_four_points_transform():
     assert isinstance(skew_img, np.ndarray)
     assert isinstance(skew_img_out, np.ndarray)
     assert np.allclose(four_point_transform(skew_img, rect), skew_img_out, rtol=0.014)
+
+# @pytest.mark.golden_test("data/test_easyocr_utils/test_group_text_box.yaml")
+# def test_group_text_box(golden):
+
+#     polys = [np.array(box, dtype=np.int32) for box in golden["input"]["polys_1"]]
+#     result = group_text_box(polys, **golden["input"]["input_1"])
+
+#     assert result == (golden.out["output"]["output_1"][0],  # merged list (horizontal list)
+#                       golden.out["output"]["output_1"][1])  # free list
+
+@pytest.mark.golden_test("data/test_easyocr_utils/test_group_text_box.yaml")
+def test_group_text_box(golden):
+
+    polys = [np.array(box, dtype=np.int32) for box in golden["input"]["polys_2"]]
+    result = group_text_box(polys, **golden["input"]["input_1"])
+
+    assert result == (golden.out["output"]["output_2"][0],  # merged list (horizontal list)
+                      golden.out["output"]["output_2"][1])  # free list
