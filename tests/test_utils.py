@@ -8,7 +8,7 @@ from icecream import ic
 from easyocr.utils import (BeamEntry, BeamState, addBeam, consecutive,
                            ctcBeamSearch, word_segmentation, simplify_label,
                            fast_simplify_label, CTCLabelConverter, four_point_transform,
-                           group_text_box)
+                           group_text_box, calculate_ratio, compute_ratio_and_resize)
 
 
 # Fixtures:
@@ -128,8 +128,8 @@ class TestCTCLabelConverter():
         mat_probs = load_mat_probs_mairie
         mat_probs = mat_probs[np.newaxis, :, :]
 
-        assert converter.decode_beamsearch(mat_probs,
-                                           np.array(golden["input"]["beamWidth"])) == golden.out["output"]
+        assert converter.decode_wordbeamsearch(mat_probs,
+                                              np.array(golden["input"]["beamWidth"])) == golden.out["output"]
 
 
 # transformed_img = four_point_transform(img, rect)
@@ -156,3 +156,24 @@ def test_group_text_box(golden):
     result = group_text_box(polys, **golden["input"]["input_1"])
 
     assert result == tuple(golden.out["output"]["output_2"])  # free list
+
+def test_calculate_ratio():
+
+    result = calculate_ratio(width=400,height=500)
+    assert result == 1.25
+
+    with pytest.raises(ZeroDivisionError):
+        calculate_ratio(width=400, height=0)
+        calculate_ratio(width=0, height=400)
+
+def test_compute_ratio_and_resize():
+    skew_img_path = "tests/data/test_easyocr_utils/data/skew_text_1_ndarray_400x800.csv"
+    skew_img = np.genfromtxt(skew_img_path, delimiter=',')
+    resized_img_out_path = "tests/data/test_easyocr_utils/data/skew_text_1_resized.csv"
+    resized_img_out = np.genfromtxt(resized_img_out_path, delimiter=',')
+
+    result_img, ratio = compute_ratio_and_resize(skew_img, skew_img.shape[1], skew_img.shape[0], model_height=64)
+    assert ratio == 2.0
+    assert np.allclose(result_img, resized_img_out, rtol=0.01)
+
+
