@@ -9,6 +9,10 @@ source =
     */site-packages/
 
 
+[html]
+show_contexts = True
+
+
 [report]
 # Require 100% coverage for tests to succeed
 # fail_under = 100
