@@ -15,8 +15,6 @@ import sys
 from PIL import Image
 from logging import getLogger
 import yaml
-from icecream import install
-install()
 
 if sys.version_info[0] == 2:
     from io import open

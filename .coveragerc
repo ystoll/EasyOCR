@@ -2,17 +2,21 @@
 [run]
 branch = True
 source = easyocr
-omit =
+parallel = True
 
 [paths]
 source =
     */site-packages/
+
 
 [report]
 # Require 100% coverage for tests to succeed
 # fail_under = 100
 # Here we set fail_under = 10 only for test purposes.
 fail_under = 10
+
+# Show lines of code not executed by pytest
+show_missing = True
 
 # Regexes for lines to exclude from consideration
 exclude_lines =

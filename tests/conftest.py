@@ -1,8 +1,11 @@
 from typing import Any
 
+import icecream
 import pytest
 from pytest_golden.plugin import GoldenTestFixture
 from pytest_golden import yaml
+
+icecream.install()
 
 from easyocr import Reader
 
@@ -17,7 +20,17 @@ class EasyOCROutput(object):
         self.value = str(value)
 
     def __eq__(self, __o: object) -> bool:
+        """Checks if this class and another object are equal."""
         return self.value == __o
+
+    def __repr__(self) -> str:
+        """Unicode representation of this class."""
+        return self.__str__()
+
+    def __str__(self) -> str:
+        """Unicode representation of this class."""
+        return self.value
+
 
 
 yaml.add_representer(EasyOCROutput, lambda dumper, data: dumper.represent_scalar("!EasyOCROutput", data.value))
